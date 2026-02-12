@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const db = require('./config/db');
 
 dotenv.config();
+// Force restart for debug
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -28,7 +29,7 @@ app.use('/api/progress', require('./routes/progressRoutes'));
 db.authenticate()
   .then(() => {
     console.log('Database connected...');
-    return db.sync(); // Sync models
+    return db.sync({ alter: true }); // Sync models
   })
   .then(() => console.log('Models synced...'))
   .catch(err => console.log('Error: ' + err));

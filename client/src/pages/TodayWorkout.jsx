@@ -9,7 +9,7 @@ const TodayWorkout = () => {
     const { user } = useContext(AuthContext);
     const [workout, setWorkout] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [logs, setLogs] = useState({});
+    const [logs, setLogs] = useState({}); // { exerciseName: { sets: [{weight, reps, completed}, ...], finished: false } }
 
     useEffect(() => {
         fetchTodayWorkout();
@@ -21,15 +21,23 @@ const TodayWorkout = () => {
             const { data } = await axios.get('http://localhost:5000/api/workouts/today', config);
             setWorkout(data);
 
-            // Initialize logs state
+            // Initialize logs state with rows for each set
             if (data.exercises) {
                 const initialLogs = {};
                 data.exercises.forEach(ex => {
+                    const sets = [];
+                    // Create a row for each target set
+                    for (let i = 0; i < (ex.sets || 3); i++) {
+                        sets.push({
+                            setNumber: i + 1,
+                            weight: ex.suggestedWeight || 0,
+                            reps: ex.reps || 10,
+                            completed: false
+                        });
+                    }
                     initialLogs[ex.name] = {
-                        sets: ex.sets,
-                        reps: ex.reps, // target reps
-                        weight: ex.suggestedWeight,
-                        completed: true
+                        sets: sets,
+                        finished: false
                     };
                 });
                 setLogs(initialLogs);
@@ -41,23 +49,84 @@ const TodayWorkout = () => {
         }
     };
 
-    const handleLogChange = (exerciseName, field, value) => {
-        setLogs(prev => ({
-            ...prev,
-            [exerciseName]: {
-                ...prev[exerciseName],
-                [field]: value
-            }
-        }));
+    const handleSetChange = (exerciseName, setIndex, field, value) => {
+        setLogs(prev => {
+            const exerciseLog = { ...prev[exerciseName] };
+            const newSets = [...exerciseLog.sets];
+            newSets[setIndex] = { ...newSets[setIndex], [field]: value };
+            exerciseLog.sets = newSets;
+            return { ...prev, [exerciseName]: exerciseLog };
+        });
+    };
+
+    const toggleSetCompletion = (exerciseName, setIndex) => {
+        setLogs(prev => {
+            const exerciseLog = { ...prev[exerciseName] };
+            const newSets = [...exerciseLog.sets];
+            newSets[setIndex] = { ...newSets[setIndex], completed: !newSets[setIndex].completed };
+            exerciseLog.sets = newSets;
+
+            // Check if all sets are completed to mark exercise as finished?
+            // Optional: Auto-finish could be annoying, let's keep it manual or visual only.
+
+            return { ...prev, [exerciseName]: exerciseLog };
+        });
+    };
+
+    const addSet = (exerciseName) => {
+        setLogs(prev => {
+            const exerciseLog = { ...prev[exerciseName] };
+            const lastSet = exerciseLog.sets[exerciseLog.sets.length - 1];
+            const newSet = {
+                setNumber: exerciseLog.sets.length + 1,
+                weight: lastSet ? lastSet.weight : 0,
+                reps: lastSet ? lastSet.reps : 10,
+                completed: false
+            };
+            exerciseLog.sets = [...exerciseLog.sets, newSet];
+            return { ...prev, [exerciseName]: exerciseLog };
+        });
+    };
+
+    const removeSet = (exerciseName) => {
+        setLogs(prev => {
+            const exerciseLog = { ...prev[exerciseName] };
+            if (exerciseLog.sets.length <= 1) return prev; // Keep at least one set
+            const newSets = exerciseLog.sets.slice(0, -1);
+            exerciseLog.sets = newSets;
+            return { ...prev, [exerciseName]: exerciseLog };
+        });
     };
 
     const handleSubmit = async () => {
         try {
             const config = { headers: { Authorization: `Bearer ${user.token}` } };
-            const exercisesToLog = Object.keys(logs).map(name => ({
-                name,
-                ...logs[name]
-            }));
+            const exercisesToLog = Object.keys(logs).map(name => {
+                const logData = logs[name];
+                // Calculate summaries
+                // We send the detailed logs as 'log_data'
+                // We also send the standard fields required by backend model validation (sets, reps, weight)
+                // We'll use the BEST set for weight, total reps? Or just the target values?
+                // The controller update we made handles extracting maxWeight from log_data.
+                // We just need to pass something valid for sets/reps/weight to pass basic validation if any.
+
+                const validSets = logData.sets.filter(s => s.completed); // Log all or only completed? Let's log all user entered.
+                // Actually, let's log everything the user sees as "sets".
+
+                return {
+                    name,
+                    sets: logData.sets.length,
+                    reps: 0, // Placeholder, backend can ignore or use summary
+                    weight: 0, // Placeholder
+                    completed: true, // Mark exercise as done
+                    log_data: logData.sets.map(s => ({
+                        set: s.setNumber,
+                        weight: s.weight,
+                        reps: s.reps,
+                        completed: s.completed
+                    }))
+                };
+            });
 
             await axios.post('http://localhost:5000/api/workouts/log', { exercises: exercisesToLog }, config);
             alert('Workout Logged Successfully!');
@@ -71,7 +140,7 @@ const TodayWorkout = () => {
 
     return (
         <Layout>
-            <div className="max-w-4xl mx-auto">
+            <div className="max-w-4xl mx-auto pb-20">
                 <h2 className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">Today's Workout: {workout?.day}</h2>
 
                 {workout?.isRestDay ? (
@@ -80,54 +149,78 @@ const TodayWorkout = () => {
                         <p className="text-gray-400">{workout.message}</p>
                     </div>
                 ) : (
-                    <div className="space-y-6">
+                    <div className="space-y-8">
                         {workout?.exercises?.map((ex, idx) => (
                             <motion.div
                                 key={idx}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
                                 transition={{ delay: idx * 0.1 }}
                                 className="bg-surface p-6 rounded-xl border border-gray-700 shadow-lg"
                             >
-                                <div className="flex justify-between items-center mb-4">
-                                    <h3 className="text-xl font-bold text-white">{ex.name}</h3>
-                                    <div className="text-sm text-gray-400">Target: {ex.sets} sets x {ex.reps} reps @ {ex.suggestedWeight}kg</div>
+                                <div className="flex justify-between items-center mb-6 border-b border-gray-700 pb-4">
+                                    <div>
+                                        <h3 className="text-xl font-bold text-white">{ex.name}</h3>
+                                        <div className="text-sm text-gray-400 mt-1">Target: {ex.sets} sets x {ex.reps} reps</div>
+                                    </div>
+                                    <div className="text-primary font-bold bg-primary/10 px-3 py-1 rounded-lg border border-primary/20">
+                                        Suggest: {ex.suggestedWeight}kg
+                                    </div>
                                 </div>
 
-                                <div className="grid grid-cols-2 md:grid-cols-4 gap-4 items-end">
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Weight</label>
-                                        <input
-                                            type="number"
-                                            value={logs[ex.name]?.weight || ''}
-                                            onChange={(e) => handleLogChange(ex.name, 'weight', parseFloat(e.target.value))}
-                                            className="w-full bg-background border border-gray-600 rounded p-2 text-white"
-                                        />
+                                <div className="space-y-3">
+                                    {/* Header Row */}
+                                    <div className="grid grid-cols-10 gap-2 text-xs text-gray-400 font-medium uppercase tracking-wider text-center mb-2 px-2">
+                                        <div className="col-span-1">Set</div>
+                                        <div className="col-span-3">kg</div>
+                                        <div className="col-span-3">Reps</div>
+                                        <div className="col-span-3">Status</div>
                                     </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Sets</label>
-                                        <input
-                                            type="number"
-                                            value={logs[ex.name]?.sets || ''}
-                                            onChange={(e) => handleLogChange(ex.name, 'sets', parseInt(e.target.value))}
-                                            className="w-full bg-background border border-gray-600 rounded p-2 text-white"
-                                        />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs text-gray-500 mb-1">Reps</label>
-                                        <input
-                                            type="number"
-                                            value={logs[ex.name]?.reps || ''}
-                                            onChange={(e) => handleLogChange(ex.name, 'reps', e.target.value)} // keep as string to allow ranges if needed, but validation might need number
-                                            className="w-full bg-background border border-gray-600 rounded p-2 text-white"
-                                        />
-                                    </div>
+
+                                    {/* Set Rows */}
+                                    {logs[ex.name]?.sets.map((set, setIdx) => (
+                                        <div key={setIdx} className={`grid grid-cols-10 gap-2 items-center p-2 rounded-lg transition-colors ${set.completed ? 'bg-green-500/10 border border-green-500/30' : 'bg-background/50 border border-gray-700'}`}>
+                                            <div className="col-span-1 text-center font-bold text-gray-400">{set.setNumber}</div>
+                                            <div className="col-span-3">
+                                                <input
+                                                    type="number"
+                                                    value={set.weight}
+                                                    onChange={(e) => handleSetChange(ex.name, setIdx, 'weight', e.target.value)}
+                                                    className="w-full bg-slate-900 border border-gray-600 rounded p-2 text-center text-white focus:border-primary outline-none"
+                                                />
+                                            </div>
+                                            <div className="col-span-3">
+                                                <input
+                                                    type="number"
+                                                    value={set.reps}
+                                                    onChange={(e) => handleSetChange(ex.name, setIdx, 'reps', e.target.value)}
+                                                    className="w-full bg-slate-900 border border-gray-600 rounded p-2 text-center text-white focus:border-primary outline-none"
+                                                />
+                                            </div>
+                                            <div className="col-span-3">
+                                                <button
+                                                    onClick={() => toggleSetCompletion(ex.name, setIdx)}
+                                                    className={`w-full py-2 rounded font-medium flex items-center justify-center transition-colors ${set.completed ? 'bg-green-500 text-white' : 'bg-gray-700 text-gray-300 hover:bg-gray-600'}`}
+                                                >
+                                                    {set.completed ? <CheckCircle size={16} /> : 'Done?'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+
+                                <div className="flex gap-3 mt-4">
                                     <button
-                                        onClick={() => handleLogChange(ex.name, 'completed', !logs[ex.name]?.completed)}
-                                        className={`p-2 rounded flex items-center justify-center gap-2 ${logs[ex.name]?.completed ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'}`}
+                                        onClick={() => addSet(ex.name)}
+                                        className="text-xs font-medium text-gray-400 hover:text-white flex items-center gap-1 py-2 px-3 rounded hover:bg-gray-800 transition-colors"
                                     >
-                                        {logs[ex.name]?.completed ? <CheckCircle size={20} /> : <XCircle size={20} />}
-                                        {logs[ex.name]?.completed ? 'Done' : 'Failed'}
+                                        + Add Set
+                                    </button>
+                                    <button
+                                        onClick={() => removeSet(ex.name)}
+                                        className="text-xs font-medium text-red-400 hover:text-red-300 flex items-center gap-1 py-2 px-3 rounded hover:bg-red-900/20 transition-colors"
+                                    >
+                                        - Remove Set
                                     </button>
                                 </div>
                             </motion.div>
@@ -135,9 +228,9 @@ const TodayWorkout = () => {
 
                         <button
                             onClick={handleSubmit}
-                            className="w-full bg-gradient-to-r from-primary to-secondary p-4 rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-primary/40 transition-all"
+                            className="w-full bg-gradient-to-r from-primary to-secondary p-4 rounded-xl font-bold text-lg hover:shadow-lg hover:shadow-primary/40 transition-all text-white flex items-center justify-center gap-2"
                         >
-                            Finish Workout
+                            <CheckCircle size={24} /> Finish Workout
                         </button>
                     </div>
                 )}

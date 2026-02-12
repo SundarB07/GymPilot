@@ -1,88 +1,128 @@
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Dumbbell, Utensils, TrendingUp, CheckCircle } from 'lucide-react';
+import { Dumbbell, Utensils, TrendingUp, CheckCircle, ArrowRight, Zap, Shield, Cpu, Sparkles } from 'lucide-react';
 
-const FeatureCard = ({ icon, title, description }) => (
+const FeatureCard = ({ icon, title, description, color }) => (
     <motion.div
         whileHover={{ y: -5 }}
-        className="bg-surface p-6 rounded-2xl border border-gray-700 hover:border-primary/50 transition-all shadow-lg hover:shadow-primary/10"
+        className="bg-slate-900/50 backdrop-blur-sm p-8 rounded-3xl border border-white/5 hover:border-white/10 transition-all shadow-xl hover:shadow-cyan-500/10 group"
     >
-        <div className="mb-4 text-primary bg-primary/10 w-fit p-3 rounded-xl">{icon}</div>
-        <h3 className="text-xl font-bold text-white mb-2">{title}</h3>
-        <p className="text-gray-400 leading-relaxed">{description}</p>
+        <div className={`mb - 6 p - 4 rounded - 2xl bg - gradient - to - br ${color} text - white w - fit shadow - lg shadow - black / 20 group - hover: scale - 110 transition - transform duration - 300`}>
+            {icon}
+        </div>
+        <h3 className="text-xl font-bold text-white mb-3 group-hover:text-cyan-400 transition-colors feature-title">{title}</h3>
+        <p className="text-slate-400 leading-relaxed font-light">{description}</p>
     </motion.div>
 );
 
 const Landing = () => {
     return (
-        <div className="min-h-screen bg-background text-text flex flex-col">
+        <div className="min-h-screen bg-slate-950 text-white flex flex-col relative overflow-hidden">
+            {/* Background Gradients */}
+            <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
+                <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-blue-600/10 rounded-full blur-[120px]" />
+                <div className="absolute top-[20%] right-[-20%] w-[50%] h-[50%] bg-cyan-500/10 rounded-full blur-[150px]" />
+                <div className="absolute bottom-[-10%] left-[20%] w-[40%] h-[40%] bg-purple-500/10 rounded-full blur-[120px]" />
+            </div>
+
             {/* Navbar */}
-            <nav className="flex justify-between items-center p-6 container mx-auto">
-                <div className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary flex items-center gap-2">
-                    <Dumbbell size={32} className="text-primary" />
-                    GymPilot
+            <nav className="flex justify-between items-center p-6 container mx-auto relative z-10">
+                <div className="flex items-center gap-2">
+                    <div className="bg-gradient-to-br from-cyan-500 to-blue-600 p-2 rounded-lg">
+                        <Dumbbell size={24} className="text-white" />
+                    </div>
+                    <span className="text-2xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-white via-cyan-200 to-blue-400 tracking-tight">
+                        GymPilot
+                    </span>
                 </div>
                 <div className="flex gap-4">
-                    <Link to="/login" className="px-6 py-2 rounded-lg text-gray-300 hover:text-white hover:bg-surface transition-colors border border-transparent hover:border-gray-700">
+                    <Link to="/login" className="px-5 py-2.5 rounded-xl text-slate-300 hover:text-white hover:bg-white/5 transition-all font-medium border border-transparent hover:border-white/10">
                         Login
                     </Link>
-                    <Link to="/register" className="px-6 py-2 rounded-lg bg-primary hover:bg-blue-600 text-white font-medium transition-transform transform hover:scale-105 shadow-lg shadow-primary/25">
+                    <Link to="/register" className="px-5 py-2.5 rounded-xl bg-white text-slate-950 hover:bg-cyan-50 font-bold transition-all shadow-lg hover:shadow-cyan-500/20 transform hover:-translate-y-0.5">
                         Get Started
                     </Link>
                 </div>
             </nav>
 
             {/* Hero Section */}
-            <main className="flex-1 flex flex-col items-center justify-center container mx-auto px-6 py-12 text-center">
+            <main className="flex-1 flex flex-col items-center justify-center container mx-auto px-6 py-12 text-center relative z-10">
                 <motion.div
-                    initial={{ opacity: 0, y: 30 }}
-                    animate={{ opacity: 1, y: 0 }}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
                     transition={{ duration: 0.8 }}
-                    className="max-w-4xl mx-auto space-y-6"
+                    className="max-w-5xl mx-auto space-y-8"
                 >
-                    <span className="px-4 py-2 rounded-full bg-surface border border-primary/30 text-primary text-sm font-medium inline-block mb-4">
-                        AI-Powered Fitness Revolution 🚀
-                    </span>
-                    <h1 className="text-5xl md:text-7xl font-extrabold leading-tight">
-                        Your Personal <span className="bg-clip-text text-transparent bg-gradient-to-r from-primary to-secondary">AI Trainer</span>
+                    <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cyan-500/10 border border-cyan-500/20 text-cyan-400 text-sm font-semibold mb-6">
+                        <Sparkles size={16} />
+                        <span>AI-Powered Fitness Generation 2.0</span>
+                    </div>
+
+                    <h1 className="text-6xl md:text-8xl font-black leading-tight tracking-tight">
+                        Forge Your <br />
+                        <span className="bg-clip-text text-transparent bg-gradient-to-r from-cyan-400 via-blue-500 to-purple-500 animate-gradient-x">Perfect Body</span>
                     </h1>
-                    <p className="text-xl text-gray-400 max-w-2xl mx-auto leading-relaxed">
-                        GymPilot creates personalized workout plans, tracks your nutrition, and visualizes your progress—all powered by advanced AI.
+
+                    <p className="text-xl text-slate-400 max-w-2xl mx-auto leading-relaxed font-light">
+                        Experience the future of personal training. GymPilot uses advanced AI to build custom workout plans, track nutrition, and visualize your evolution.
                     </p>
 
-                    <div className="flex flex-col sm:flex-row gap-4 justify-center pt-8">
-                        <Link to="/register" className="px-8 py-4 rounded-xl bg-gradient-to-r from-primary to-blue-600 text-white font-bold text-lg hover:shadow-lg hover:shadow-primary/40 transition-all transform hover:-translate-y-1">
-                            Start Your Journey Free
+                    <div className="flex flex-col sm:flex-row gap-5 justify-center pt-10">
+                        <Link to="/register" className="group px-8 py-4 rounded-2xl bg-gradient-to-r from-cyan-500 to-blue-600 text-white font-bold text-lg hover:shadow-[0_0_30px_rgba(6,182,212,0.4)] transition-all transform hover:-translate-y-1 flex items-center justify-center gap-2">
+                            Start Your Free Trial <ArrowRight className="group-hover:translate-x-1 transition-transform" />
                         </Link>
-                        <Link to="/login" className="px-8 py-4 rounded-xl bg-surface border border-gray-700 text-white font-bold text-lg hover:bg-gray-800 transition-all">
-                            Existing User? Login
+                        <Link to="/login" className="px-8 py-4 rounded-2xl bg-white/5 backdrop-blur-sm border border-white/10 text-white font-bold text-lg hover:bg-white/10 transition-all flex items-center justify-center gap-2">
+                            <Cpu size={20} /> How AI Works
                         </Link>
                     </div>
                 </motion.div>
 
+                {/* Stats / Trust */}
+                <div className="mt-20 grid grid-cols-2 md:grid-cols-4 gap-8 md:gap-16 border-t border-white/5 pt-12 w-full max-w-4xl opacity-70">
+                    <div className="text-center">
+                        <div className="text-3xl font-bold text-white mb-1">10k+</div>
+                        <div className="text-slate-500 text-sm uppercase tracking-wider font-semibold">Users Active</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-3xl font-bold text-white mb-1">50k+</div>
+                        <div className="text-slate-500 text-sm uppercase tracking-wider font-semibold">Plans Generated</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-3xl font-bold text-white mb-1">99%</div>
+                        <div className="text-slate-500 text-sm uppercase tracking-wider font-semibold">Goal Success</div>
+                    </div>
+                    <div className="text-center">
+                        <div className="text-3xl font-bold text-white mb-1">24/7</div>
+                        <div className="text-slate-500 text-sm uppercase tracking-wider font-semibold">AI Support</div>
+                    </div>
+                </div>
+
                 {/* Features Grid */}
-                <div className="grid md:grid-cols-3 gap-8 mt-24 w-full max-w-6xl">
+                <div className="grid md:grid-cols-3 gap-6 mt-32 w-full max-w-7xl px-4">
                     <FeatureCard
-                        icon={<Dumbbell size={32} />}
-                        title="Smart Workouts"
-                        description="Get weekly workout plans tailored to your specific goals, equipment, and schedule."
+                        icon={<Zap size={32} />}
+                        title="Smart Workout AI"
+                        description="Algorithms that adapt to your strength levels and recovery in real-time."
+                        color="from-cyan-500 to-blue-600"
                     />
                     <FeatureCard
-                        icon={<Utensils size={32} />}
-                        title="Nutrition Tracking"
-                        description="Log meals easily and track your macros to ensure you're fueling your body right."
+                        icon={<Shield size={32} />}
+                        title="Precision Nutrition"
+                        description="Macro-perfect meal plans designed to fuel your specific metabolic needs."
+                        color="from-purple-500 to-indigo-600"
                     />
                     <FeatureCard
                         icon={<TrendingUp size={32} />}
-                        title="Progress Analytics"
-                        description="Visualize your strength gains and body transformation with intuitive charts."
+                        title="Predictive Analytics"
+                        description="Visualize your future gains with advanced progression modeling."
+                        color="from-emerald-400 to-teal-600"
                     />
                 </div>
             </main>
 
             {/* Footer */}
-            <footer className="py-8 border-t border-gray-800 text-center text-gray-500">
-                <p>&copy; {new Date().getFullYear()} GymPilot. built for greatness.</p>
+            <footer className="py-10 border-t border-white/5 text-center text-slate-600 text-sm relative z-10">
+                <p>&copy; {new Date().getFullYear()} GymPilot AI. Engineered for performance.</p>
             </footer>
         </div>
     );

@@ -45,7 +45,7 @@ const DietLog = () => {
     return (
         <Layout>
             <div className="max-w-4xl mx-auto">
-                <h2 className="text-3xl font-bold mb-6 bg-clip-text text-transparent bg-gradient-to-r from-orange-400 to-red-500">Diet & Nutrition Log</h2>
+                <h2 className="text-5xl font-extrabold mb-8 text-center bg-clip-text text-transparent bg-gradient-to-r from-primary via-cyan-400 to-secondary drop-shadow-[0_0_15px_rgba(34,211,238,0.5)] tracking-tight">Diet & Nutrition Log</h2>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
                     <div className="md:col-span-1">
@@ -82,26 +82,45 @@ const DietLog = () => {
                                 </div>
                                 <div>
                                     <label className="block text-gray-400 text-sm mb-1">Food Item</label>
-                                    <input
-                                        type="text"
-                                        value={formData.item_name}
-                                        onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
-                                        placeholder="e.g. 2 Eggs, Whey Protein"
-                                        className="w-full bg-background border border-gray-600 rounded p-3 text-white focus:border-primary focus:outline-none"
-                                        required
-                                    />
+                                    <div className="flex gap-2">
+                                        <input
+                                            type="text"
+                                            value={formData.item_name}
+                                            onChange={(e) => setFormData({ ...formData, item_name: e.target.value })}
+                                            placeholder="e.g. 2 Eggs, 100g Chicken"
+                                            className="w-full bg-background border border-gray-600 rounded p-3 text-white focus:border-primary focus:outline-none"
+                                            required
+                                        />
+                                        <button
+                                            type="button"
+                                            onClick={async () => {
+                                                if (!formData.item_name) return;
+                                                const config = { headers: { Authorization: `Bearer ${user.token}` } };
+                                                try {
+                                                    const { data } = await axios.post('http://localhost:5000/api/diet/estimate', { item_name: formData.item_name }, config);
+                                                    setFormData(prev => ({ ...prev, protein: data.estimatedProtein }));
+                                                } catch (err) {
+                                                    console.error("Analysis failed", err);
+                                                }
+                                            }}
+                                            className="bg-gray-700 hover:bg-gray-600 px-4 rounded-lg text-sm text-cyan-400 border border-gray-600"
+                                        >
+                                            Analyze
+                                        </button>
+                                    </div>
                                 </div>
                                 <div>
-                                    <label className="block text-gray-400 text-sm mb-1">Protein (g)</label>
+                                    <label className="block text-gray-400 text-sm mb-1">Protein (g) - <span className="text-gray-500 text-xs">Auto-calculated</span></label>
                                     <input
                                         type="number"
                                         value={formData.protein}
                                         onChange={(e) => setFormData({ ...formData, protein: e.target.value })}
                                         className="w-full bg-background border border-gray-600 rounded p-3 text-white focus:border-primary focus:outline-none"
                                         required
+                                        placeholder="Or enter manually"
                                     />
                                 </div>
-                                <button type="submit" className="w-full bg-primary hover:bg-blue-600 text-white p-3 rounded-lg font-bold flex items-center justify-center gap-2">
+                                <button type="submit" className="w-full bg-primary hover:bg-blue-600 text-white p-3 rounded-lg font-bold flex items-center justify-center gap-2 transition-all shadow-lg shadow-blue-500/20">
                                     <Plus size={20} /> Add to Log
                                 </button>
                             </form>

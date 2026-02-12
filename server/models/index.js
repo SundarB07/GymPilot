@@ -81,6 +81,10 @@ const WorkoutLog = sequelize.define('WorkoutLog', {
         type: DataTypes.BOOLEAN,
         defaultValue: true,
     },
+    log_data: {
+        type: DataTypes.JSON, // Stores detailed set info: [{ set: 1, reps: 10, weight: 20 }, ...]
+        allowNull: true,
+    },
 });
 
 const DietLog = sequelize.define('DietLog', {
