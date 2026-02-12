@@ -3,7 +3,7 @@ import Layout from '../components/Layout';
 import AuthContext from '../context/AuthContext';
 import axios from 'axios';
 import { motion } from 'framer-motion';
-import { Upload } from 'lucide-react';
+import { Upload, Trash2 } from 'lucide-react';
 
 const Progress = () => {
     const { user } = useContext(AuthContext);
@@ -22,6 +22,19 @@ const Progress = () => {
             setImages(data);
         } catch (error) {
             console.error(error);
+        }
+    };
+
+    const handleDelete = async (id) => {
+        if (!window.confirm('Are you sure you want to delete this progress photo?')) return;
+        try {
+            const config = { headers: { Authorization: `Bearer ${user.token}` } };
+            await axios.delete(`http://localhost:5000/api/progress/${id}`, config);
+            // Remove locally to avoid refetch
+            setImages(images.filter(img => img.id !== id));
+        } catch (error) {
+            console.error(error);
+            alert('Failed to delete image');
         }
     };
 
@@ -101,7 +114,7 @@ const Progress = () => {
                                     key={img.id}
                                     initial={{ opacity: 0, scale: 0.9 }}
                                     animate={{ opacity: 1, scale: 1 }}
-                                    className="bg-surface rounded-xl overflow-hidden border border-gray-700 group hover:border-gray-500 transition-all"
+                                    className="bg-surface rounded-xl overflow-hidden border border-gray-700 group hover:border-gray-500 transition-all relative"
                                 >
                                     <div className="aspect-[3/4] overflow-hidden relative">
                                         <img
@@ -109,6 +122,13 @@ const Progress = () => {
                                             alt={`Progress on ${img.date}`}
                                             className="w-full h-full object-cover transform group-hover:scale-105 transition-transform duration-500"
                                         />
+                                        <button
+                                            onClick={() => handleDelete(img.id)}
+                                            className="absolute top-2 right-2 bg-red-600/80 text-white p-2 rounded-full opacity-0 group-hover:opacity-100 transition-opacity hover:bg-red-700 cursor-pointer z-10"
+                                            title="Delete Image"
+                                        >
+                                            <Trash2 size={16} />
+                                        </button>
                                         <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-4">
                                             <div className="text-white font-bold text-lg">{img.weight} kg</div>
                                             <div className="text-gray-300 text-sm">{img.date}</div>

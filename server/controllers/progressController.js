@@ -65,4 +65,33 @@ const getProgress = async (req, res) => {
     }
 };
 
-module.exports = { upload, uploadImage, getProgress };
+const fs = require('fs');
+
+const deleteProgress = async (req, res) => {
+    const userId = req.user.id;
+    const progressId = req.params.id;
+
+    try {
+        const progress = await ProgressImage.findOne({ where: { id: progressId, UserId: userId } });
+
+        if (!progress) {
+            return res.status(404).json({ message: 'Progress record not found' });
+        }
+
+        // Delete file from filesystem
+        const filePath = path.join(__dirname, '..', progress.image_url);
+        if (fs.existsSync(filePath)) {
+            fs.unlinkSync(filePath);
+        }
+
+        // Delete from database
+        await progress.destroy();
+
+        res.json({ message: 'Progress deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error deleting progress' });
+    }
+};
+
+module.exports = { upload, uploadImage, getProgress, deleteProgress };
