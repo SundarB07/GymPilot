@@ -9,15 +9,16 @@ export default function Dashboard() {
         <div className="space-y-6">
             <div className="flex justify-between items-center mb-8">
                 <div>
-                    <h1 className="text-2xl font-bold neon-text">GymPilot</h1>
+                    <h1 className="text-2xl font-bold neon-text md:hidden">GymPilot</h1>
+                    <h1 className="text-3xl font-extrabold font-orbitron tracking-wider text-white hidden md:block">COMMAND CENTER</h1>
                     <p className="text-sm text-gray-400">Welcome back, {user?.email}</p>
                 </div>
-                <button onClick={signOut} className="text-xs text-cyber-blue border border-cyber-blue/30 px-3 py-1 rounded hover:bg-cyber-blue/10 transition-colors">
+                <button onClick={signOut} className="md:hidden text-xs text-cyber-blue border border-cyber-blue/30 px-3 py-1 rounded hover:bg-cyber-blue/10 transition-colors">
                     Logout
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 gap-4 text-center">
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
                 <Link to="/plan" className="cyber-card flex flex-col items-center justify-center p-6 space-y-3 cursor-pointer">
                     <ClipboardList className="text-cyber-cyan w-10 h-10 mb-2 drop-shadow-[0_0_10px_rgba(0,245,255,0.6)]" />
                     <span className="font-orbitron text-sm font-semibold tracking-wide">My Plan</span>

@@ -21,11 +21,11 @@ CREATE TABLE workoutplans (
 
 CREATE TABLE exercises (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name TEXT NOT NULL,
-    muscle_group TEXT NOT NULL,
-    sub_muscle TEXT NOT NULL,
-    movement_type TEXT NOT NULL,
-    equipment TEXT NOT NULL,
+    main_muscle_group TEXT NOT NULL,
+    sub_muscle_group TEXT NOT NULL,
+    exercise_name TEXT NOT NULL,
+    equipment_required TEXT NOT NULL,
+    mechanics TEXT NOT NULL,
     difficulty TEXT NOT NULL,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
@@ -94,28 +94,7 @@ CREATE POLICY "Users can view their own diet logs" ON dietlogs FOR SELECT USING 
 CREATE POLICY "Users can update their own diet logs" ON dietlogs FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own diet logs" ON dietlogs FOR DELETE USING (auth.uid() = user_id);
 
--- 4. Initial Seed Data for Exercises
-INSERT INTO exercises (name, muscle_group, sub_muscle, movement_type, equipment, difficulty) VALUES
-('Bench Press', 'Chest', 'Middle Chest', 'Compound', 'Barbell', 'Intermediate'),
-('Incline Dumbbell Press', 'Chest', 'Upper Chest', 'Compound', 'Dumbbell', 'Intermediate'),
-('Cable Crossover', 'Chest', 'Lower Chest', 'Isolation', 'Cable', 'Beginner'),
-('Pull-Ups', 'Back', 'Lats', 'Compound', 'Bodyweight', 'Intermediate'),
-('Barbell Row', 'Back', 'Middle Back', 'Compound', 'Barbell', 'Advanced'),
-('Lat Pulldown', 'Back', 'Lats', 'Compound', 'Cable', 'Beginner'),
-('Overhead Press', 'Shoulders', 'Front Delts', 'Compound', 'Barbell', 'Intermediate'),
-('Lateral Raises', 'Shoulders', 'Side Delts', 'Isolation', 'Dumbbell', 'Beginner'),
-('Face Pulls', 'Shoulders', 'Rear Delts', 'Isolation', 'Cable', 'Beginner'),
-('Barbell Squat', 'Legs', 'Quads', 'Compound', 'Barbell', 'Advanced'),
-('Leg Press', 'Legs', 'Quads', 'Compound', 'Machine', 'Beginner'),
-('Romanian Deadlift', 'Legs', 'Hamstrings', 'Compound', 'Barbell', 'Intermediate'),
-('Leg Curls', 'Legs', 'Hamstrings', 'Isolation', 'Machine', 'Beginner'),
-('Calf Raises', 'Legs', 'Calves', 'Isolation', 'Machine', 'Beginner'),
-('Barbell Curls', 'Arms', 'Biceps', 'Isolation', 'Barbell', 'Beginner'),
-('Tricep Pushdowns', 'Arms', 'Triceps', 'Isolation', 'Cable', 'Beginner'),
-('Hammer Curls', 'Arms', 'Biceps', 'Isolation', 'Dumbbell', 'Beginner'),
-('Overhead Tricep Extension', 'Arms', 'Triceps', 'Isolation', 'Dumbbell', 'Beginner'),
-('Crunches', 'Core', 'Abs', 'Isolation', 'Bodyweight', 'Beginner'),
-('Plank', 'Core', 'Abs', 'Isometric', 'Bodyweight', 'Beginner');
+
 
 -- Note: Ensure you set up a trigger for auth.users to automatically create a profile if desired, 
 -- but for simplicity, the application will handle profile creation during signup flow.

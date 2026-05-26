@@ -22,7 +22,7 @@ export function generateWorkoutPlan(preferences, allExercises) {
     if (time >= 90) exercisesPerSession = 8;
 
     const getExercises = (muscles, count) => {
-        let filtered = allExercises.filter(ex => muscles.some(m => ex.muscle_group.toLowerCase().includes(m.toLowerCase())));
+        let filtered = allExercises.filter(ex => muscles.some(m => ex.main_muscle_group.toLowerCase().includes(m.toLowerCase())));
         if (filtered.length === 0) return [];
 
         // Simple shuffle
@@ -63,8 +63,8 @@ export function generateWorkoutPlan(preferences, allExercises) {
 
                 return {
                     id: ex.id,
-                    name: ex.name,
-                    muscle_group: ex.muscle_group,
+                    name: ex.exercise_name,
+                    muscle_group: ex.main_muscle_group,
                     sets: sets,
                     reps: reps
                 };

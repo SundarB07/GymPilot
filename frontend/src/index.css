@@ -1,0 +1,69 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Orbitron:wght@400;500;600;700;800;900&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  --color-cyber-bg: #050508;
+  --color-cyber-card: #0f0f15;
+  --color-cyber-blue: #00ccff;
+  --color-cyber-cyan: #00f5ff;
+  --color-cyber-darkBlue: #020205;
+  --color-cyber-neonText: #bbf0ff;
+
+  --font-orbitron: "Orbitron", sans-serif;
+  --font-inter: "Inter", sans-serif;
+
+  --shadow-neon-blue: 0 0 10px rgba(0, 204, 255, 0.4), 0 0 20px rgba(0, 204, 255, 0.2);
+  --shadow-neon-cyan: 0 0 5px rgba(0, 245, 255, 0.5), 0 0 15px rgba(0, 245, 255, 0.3);
+}
+
+body {
+  @apply bg-cyber-bg text-gray-300 font-inter antialiased overscroll-none pb-20 md:pb-0;
+  background-image: 
+    radial-gradient(circle at 10% 20%, rgba(0, 204, 255, 0.05), transparent 20%),
+    radial-gradient(circle at 90% 80%, rgba(0, 245, 255, 0.03), transparent 25%);
+  background-attachment: fixed;
+}
+
+h1, h2, h3, h4, h5, h6 {
+  @apply font-orbitron font-semibold tracking-wider text-white;
+}
+
+.cyber-card {
+  @apply bg-cyber-card border border-cyber-blue/20 rounded-xl p-5 shadow-neon-blue/10 backdrop-blur-md transition-all duration-300;
+}
+
+.cyber-card:hover {
+  @apply border-cyber-blue/40 shadow-neon-blue/20;
+}
+
+.cyber-input {
+  @apply w-full bg-cyber-darkBlue border border-cyber-blue/30 rounded-lg p-3 text-white placeholder-gray-500 focus:outline-none focus:border-cyber-cyan focus:shadow-neon-cyan focus:ring-1 focus:ring-cyber-cyan transition-all duration-300;
+}
+
+.cyber-button {
+  @apply flex items-center justify-center font-orbitron font-semibold tracking-wide bg-gradient-to-r from-cyan-600 to-blue-500 text-white rounded-lg px-6 py-3 shadow-neon-blue hover:shadow-[0_0_15px_rgba(0,204,255,0.6)] hover:brightness-110 active:scale-95 transition-all duration-300 disabled:opacity-50 disabled:pointer-events-none;
+}
+
+.cyber-button-outline {
+  @apply flex items-center justify-center font-orbitron font-semibold tracking-wide border-2 border-cyber-blue text-cyber-blue rounded-lg px-6 py-3 shadow-neon-blue hover:bg-cyber-blue/10 hover:shadow-[0_0_15px_rgba(0,204,255,0.4)] active:scale-95 transition-all duration-300;
+}
+
+.neon-text {
+  @apply text-transparent bg-clip-text bg-gradient-to-r from-cyber-blue to-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.6)];
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+}
+::-webkit-scrollbar-track {
+  background: #050508; 
+}
+::-webkit-scrollbar-thumb {
+  background: #00ccff; 
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #00f5ff; 
+}

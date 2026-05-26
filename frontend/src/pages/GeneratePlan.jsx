@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Bot, Loader2 } from 'lucide-react';
+import { Wand2, Loader2 } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { generateWorkoutPlan } from '../utils/workoutGenerator';
@@ -71,8 +71,8 @@ export default function GeneratePlan() {
     return (
         <div className="space-y-6 animate-fade-in pb-8">
             <div className="flex items-center space-x-3 mb-6">
-                <Bot className="text-cyber-blue w-8 h-8 drop-shadow-[0_0_10px_rgba(0,204,255,0.8)]" />
-                <h1 className="text-2xl font-bold font-orbitron neon-text">AI Plan Generator</h1>
+                <Wand2 className="text-cyber-cyan w-8 h-8 drop-shadow-[0_0_10px_rgba(0,245,255,0.8)] animate-pulse" />
+                <h1 className="text-2xl font-bold font-orbitron neon-text">Plan Generator</h1>
             </div>
 
             {error && <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm">{error}</div>}
@@ -114,14 +114,18 @@ export default function GeneratePlan() {
                 <div className="space-y-2">
                     <label className="text-sm text-gray-400 font-orbitron tracking-wide">Days Per Week</label>
                     <input
-                        type="range"
+                        type="number"
                         name="daysPerWeek"
-                        min="2" max="6" step="1"
+                        min="2"
+                        max="7"
+                        step="1"
                         value={formData.daysPerWeek}
                         onChange={handleChange}
-                        className="w-full accent-cyber-cyan"
+                        placeholder="Enter days per week (2-7)"
+                        className="cyber-input"
+                        required
                     />
-                    <div className="text-right text-cyber-cyan font-bold">{formData.daysPerWeek} Days</div>
+                    <div className="text-right text-cyber-cyan font-bold font-orbitron text-xs mt-1">Target: {formData.daysPerWeek} Days / Week</div>
                 </div>
 
                 {/* Time Per Session */}

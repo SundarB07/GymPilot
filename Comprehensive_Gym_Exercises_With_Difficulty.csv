@@ -1,0 +1,73 @@
+main_muscle_group,sub_muscle_group,exercise_name,equipment_required,mechanics,difficulty
+Chest,Overall Chest,Barbell Bench Press,Barbell,Compound,Intermediate
+Chest,Overall Chest,Dumbbell Bench Press,Dumbbell,Compound,Beginner/Intermediate
+Chest,Upper Chest,Incline Barbell Press,Barbell,Compound,Intermediate
+Chest,Upper Chest,Incline Dumbbell Press,Dumbbell,Compound,Intermediate
+Chest,Lower Chest,Decline Barbell Press,Barbell,Compound,Intermediate
+Chest,Lower Chest,High-to-Low Cable Crossover,Cable,Isolation,Beginner
+Chest,Inner/Outer Chest,Mid-Level Cable Crossover,Cable,Isolation,Beginner
+Chest,Inner Chest,Pec Deck Machine (Flyes),Machine,Isolation,Beginner
+Chest,Upper/Inner Chest,Low-to-High Cable Crossover,Cable,Isolation,Beginner/Intermediate
+Chest,Overall Chest,Push-ups,Bodyweight,Compound,Beginner
+Chest,Lower Chest / Triceps,Chest Dips,Bodyweight/Machine,Compound,Intermediate/Advanced
+Back,Overall Back (Thickness),Barbell Row,Barbell,Compound,Intermediate
+Back,Overall Back,Pendlay Row,Barbell,Compound,Advanced
+Back,Lats (Width),Wide-Grip Lat Pulldown,Cable/Machine,Compound,Beginner
+Back,Lats (Width),Close-Grip Lat Pulldown,Cable/Machine,Compound,Beginner
+Back,Lats (Width),Pull-ups,Bodyweight,Compound,Intermediate/Advanced
+Back,Lats / Biceps,Chin-ups,Bodyweight,Compound,Intermediate
+Back,Mid Back,Seated Cable Row,Cable,Compound,Beginner
+Back,Lower Back / Erector Spinae,Deadlift,Barbell,Compound,Advanced
+Back,Lower Back,Back Extensions (Hyperextensions),Machine/Bodyweight,Isolation,Beginner
+Back,Upper Back / Traps,T-Bar Row,Machine/Barbell,Compound,Intermediate
+Back,Upper Traps,Barbell Shrugs,Barbell/Dumbbell,Isolation,Beginner
+Back,Lats / Mid Back,Single-Arm Dumbbell Row,Dumbbell,Compound,Beginner/Intermediate
+Back,Lats,Straight-Arm Pulldown,Cable,Isolation,Beginner
+Legs,Quads / Glutes,Barbell Back Squat,Barbell,Compound,Intermediate/Advanced
+Legs,Quads Emphasis,Front Squat,Barbell,Compound,Advanced
+Legs,Quads / Glutes,Leg Press,Machine,Compound,Beginner
+Legs,Quads / Glutes,Hack Squat,Machine,Compound,Intermediate
+Legs,Glutes / Hamstrings,Romanian Deadlift (RDL),Barbell/Dumbbell,Compound,Intermediate
+Legs,Glutes,Barbell Hip Thrust,Barbell,Compound,Intermediate
+Legs,Quads,Leg Extension,Machine,Isolation,Beginner
+Legs,Hamstrings,Lying Leg Curl,Machine,Isolation,Beginner
+Legs,Hamstrings,Seated Leg Curl,Machine,Isolation,Beginner
+Legs,Calves (Gastrocnemius),Standing Calf Raise,Machine/Dumbbell,Isolation,Beginner
+Legs,Calves (Soleus),Seated Calf Raise,Machine,Isolation,Beginner
+Legs,Quads / Glutes,Walking Lunges,Dumbbell/Bodyweight,Compound,Intermediate
+Legs,Quads / Glutes,Bulgarian Split Squats,Dumbbell/Bodyweight,Compound,Intermediate/Advanced
+Shoulders,Overall / Front Delts,Overhead Press (OHP),Barbell,Compound,Intermediate
+Shoulders,Overall / Front Delts,Seated Dumbbell Press,Dumbbell,Compound,Beginner/Intermediate
+Shoulders,Front / Side Delts,Arnold Press,Dumbbell,Compound,Intermediate
+Shoulders,Side Delts,Lateral Raises,Dumbbell,Isolation,Beginner
+Shoulders,Side Delts,Cable Lateral Raises,Cable,Isolation,Beginner/Intermediate
+Shoulders,Front Delts,Front Raises,Dumbbell/Cable,Isolation,Beginner
+Shoulders,Rear Delts,Reverse Pec Deck (Rear Delt Fly),Machine,Isolation,Beginner
+Shoulders,Rear Delts,Face Pulls,Cable,Isolation,Beginner/Intermediate
+Shoulders,Side Delts / Traps,Upright Row,Barbell/Cable,Compound,Intermediate
+Arms,Biceps (Overall),Barbell Bicep Curl,Barbell,Isolation,Beginner
+Arms,Biceps (Overall),Dumbbell Alternate Curl,Dumbbell,Isolation,Beginner
+Arms,Biceps (Brachialis),Hammer Curls,Dumbbell,Isolation,Beginner
+Arms,Biceps (Peak),Preacher Curl,EZ Bar/Machine,Isolation,Beginner
+Arms,Biceps (Peak),Concentration Curls,Dumbbell,Isolation,Beginner
+Arms,Triceps (Long Head),Overhead Tricep Extension,Dumbbell/Cable,Isolation,Beginner
+Arms,Triceps (Overall),Tricep Pushdown (Rope/Straight Bar),Cable,Isolation,Beginner
+Arms,Triceps (Long/Medial Head),Skull Crushers,EZ Bar,Isolation,Intermediate
+Arms,Triceps / Chest,Tricep Dips,Bodyweight/Machine,Compound,Intermediate
+Arms,Triceps,Close-Grip Bench Press,Barbell,Compound,Intermediate
+Arms,Triceps,Tricep Kickbacks,Dumbbell/Cable,Isolation,Beginner
+Core,Overall Core,Plank,Bodyweight,Isolation,Beginner
+Core,Upper Abs,Crunches,Bodyweight,Isolation,Beginner
+Core,Upper Abs,Cable Crunches,Cable,Isolation,Intermediate
+Core,Lower Abs,Hanging Leg Raises,Bodyweight/Bar,Isolation,Advanced
+Core,Lower Abs,Lying Leg Raises,Bodyweight,Isolation,Beginner
+Core,Obliques,Russian Twists,Bodyweight/Medicine Ball,Isolation,Beginner/Intermediate
+Core,Obliques,Woodchoppers,Cable,Isolation,Intermediate
+Core,Overall Core,Ab Wheel Rollout,Ab Wheel,Isolation,Advanced
+Full Body,Total Body / Explosive,Power Clean,Barbell,Compound,Advanced
+Full Body,Total Body / Explosive,Snatch,Barbell,Compound,Advanced
+Full Body,Total Body / Conditioning,Burpees,Bodyweight,Compound,Beginner/Intermediate
+Full Body,Posterior Chain / Explosive,Kettlebell Swings,Kettlebell,Compound,Intermediate
+Full Body,Quads / Shoulders / Core,Thrusters,Barbell/Dumbbell,Compound,Intermediate/Advanced
+Full Body,Total Body / Conditioning,Battle Ropes,Ropes,Compound,Beginner
+Full Body,Total Body / Conditioning,Rowing Ergometer,Machine,Compound,Beginner
