@@ -1,4 +1,4 @@
-# GymPilot Monorepo 🏋️‍♂️✈️
+# GymPilot Monorepo
 
 Welcome to **GymPilot**, the ultimate cyber-themed assistant designed to help you generate, log, and optimize your workout routines and diet logs. 
 
@@ -67,12 +67,9 @@ To populate the `exercises` table with the comprehensive list of 72+ movements f
 You can run both platforms concurrently or operate them individually using the following commands:
 
 | Command | Action |
-|:---|:---|
 | `npm run dev` | **Runs both Frontend and Backend concurrently** with synced console logs |
 | `npm run dev:frontend` | Runs the Vite React dev server only (Port 5173) |
 | `npm run dev:backend` | Runs the Express API backend dev server only (Port 5000) |
 | `npm run seed` | Runs the database exercises seeder script |
 | `npm run install:all` | Installs dependencies across the entire monorepo |
 
----
-*Created with ❤️ for premium gym orchestration.*
