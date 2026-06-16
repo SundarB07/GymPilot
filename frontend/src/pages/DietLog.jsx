@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 import { Apple, Plus, Loader2, Info, BarChart2, ListCollapse, Trash2 } from 'lucide-react';
@@ -46,6 +46,17 @@ export default function DietLog() {
     const [selectedDbFood, setSelectedDbFood] = useState(null);
     const [quantity, setQuantity] = useState('');
     const [showConsumed, setShowConsumed] = useState(false);
+    const [activeTooltip, setActiveTooltip] = useState(null);
+    const [tooltipSize, setTooltipSize] = useState({ width: 160, height: 115 });
+    const containerRef = useRef(null);
+    const tooltipRef = useCallback((node) => {
+        if (node !== null) {
+            const rect = node.getBoundingClientRect();
+            if (rect.width > 0 && rect.height > 0) {
+                setTooltipSize({ width: rect.width, height: rect.height });
+            }
+        }
+    }, []);
 
     // Reset extra food states when meal type changes
     useEffect(() => {
@@ -393,6 +404,74 @@ export default function DietLog() {
     const maxCaloriesInGroup = Math.max(...groupedData.map(d => d.calories), 1);
     const targetCals = activePlan ? Number(activePlan.target_calories) : 2000;
     const maxChartHeight = Math.max(maxCaloriesInGroup, targetCals) * 1.15;
+
+    const getTooltipStyle = (tooltip) => {
+        if (!tooltip || !containerRef.current) return { display: 'none' };
+        
+        const containerWidth = containerRef.current.clientWidth;
+        const containerHeight = containerRef.current.clientHeight;
+        const margin = 20;
+
+        // Calculate point coordinates in pixels relative to the container
+        const pointX = (tooltip.xPercent / 100) * containerWidth;
+        const pointY = containerHeight - (tooltip.yPercent / 100) * containerHeight;
+
+        // Tooltip dimensions (either measured or fallback)
+        // Allow reduction in width if necessary to fit on very narrow screens
+        const maxAllowedWidth = Math.min(tooltipSize.width, containerWidth - 2 * margin);
+        const w = maxAllowedWidth;
+        const h = tooltipSize.height;
+
+        // Determine if point is near the top edge
+        const isNearTop = tooltip.yPercent > 55;
+
+        // Check if there is enough vertical space to show tooltip above or below
+        let targetX = 0;
+        let targetY = 0;
+
+        let spaceAbove = pointY - h - 15 >= margin;
+        let spaceBelow = pointY + 15 + h <= containerHeight - margin;
+
+        // If we want to show below (near top) and have space below:
+        if (isNearTop && spaceBelow) {
+            targetY = pointY + 15;
+            targetX = pointX - w / 2;
+            // Clamp X
+            targetX = Math.max(margin, Math.min(containerWidth - w - margin, targetX));
+        }
+        // If we want to show above (not near top) and have space above:
+        else if (!isNearTop && spaceAbove) {
+            targetY = pointY - h - 15;
+            targetX = pointX - w / 2;
+            // Clamp X
+            targetX = Math.max(margin, Math.min(containerWidth - w - margin, targetX));
+        }
+        // Otherwise, space is limited
+        // We show the tooltip beside the point
+        else {
+            const isNearRight = tooltip.xPercent > 85;
+            const isNearLeft = tooltip.xPercent < 15;
+
+            if (isNearRight || (pointX > containerWidth / 2 && !isNearLeft)) {
+                targetX = pointX - w - 15; // Shift left
+            } else {
+                targetX = pointX + 15; // Shift right
+            }
+
+            // Clamp X to make sure it doesn't overflow container boundaries
+            targetX = Math.max(margin, Math.min(containerWidth - w - margin, targetX));
+
+            // Vertical position: center on the point, then clamp to container boundaries
+            targetY = pointY - h / 2;
+            targetY = Math.max(margin, Math.min(containerHeight - h - margin, targetY));
+        }
+
+        return {
+            left: `${targetX}px`,
+            top: `${targetY}px`,
+            maxWidth: `${maxAllowedWidth}px`,
+        };
+    };
 
     return (
         <div className="space-y-6 animate-fade-in pb-10">
@@ -875,7 +954,7 @@ export default function DietLog() {
                             }}
                         >
                             {/* Relative Area for Bars, Line, Area and Guideline */}
-                            <div className="h-36 w-full relative">
+                            <div ref={containerRef} className="h-36 w-full relative">
                                 {/* SVG Line and Area Chart */}
                                 {groupedData.length > 0 && (() => {
                                     const svgWidth = 1000;
@@ -935,7 +1014,7 @@ export default function DietLog() {
                                     </div>
                                 )}
 
-                                {/* Interactive Points and Tooltips */}
+                                {/* Interactive Points */}
                                 <div className="absolute inset-0 flex justify-between">
                                     {groupedData.map((d, index) => {
                                         const bottomPercent = (d.calories / maxChartHeight) * 100;
@@ -956,33 +1035,14 @@ export default function DietLog() {
                                             <div 
                                                 key={index} 
                                                 className="flex-1 h-full flex flex-col justify-end items-center group relative mx-0.5 sm:mx-1 cursor-pointer"
+                                                onMouseEnter={() => setActiveTooltip({
+                                                    d,
+                                                    index,
+                                                    xPercent: ((index + 0.5) / groupedData.length) * 100,
+                                                    yPercent: bottomPercent
+                                                })}
+                                                onMouseLeave={() => setActiveTooltip(null)}
                                             >
-                                                {/* Hover details tooltip */}
-                                                <div className="absolute bottom-full mb-3 bg-[#09090f]/95 border border-gray-800 text-[10px] rounded-lg p-2.5 opacity-0 group-hover:opacity-100 transition-opacity duration-200 z-20 pointer-events-none text-left shadow-[0_0_15px_rgba(0,0,0,0.8)] font-orbitron whitespace-nowrap space-y-1.5 backdrop-blur-sm">
-                                                    <div className="text-white font-bold border-b border-gray-800 pb-1 mb-1">{d.label}</div>
-                                                    <div className="flex justify-between space-x-4">
-                                                        <span className="text-gray-500">Calories:</span>
-                                                        <span className={d.calories >= targetCals * 0.95 ? "text-emerald-400 font-semibold" : "text-cyber-cyan"}>
-                                                            {d.calories} / {targetCals} kcal
-                                                        </span>
-                                                    </div>
-                                                    <div className="flex justify-between space-x-4">
-                                                        <span className="text-gray-500">Protein:</span>
-                                                        <span className="text-white font-semibold">{Math.round(d.protein)}g</span>
-                                                    </div>
-                                                    <div className="flex justify-between space-x-4">
-                                                        <span className="text-gray-500">Carbs:</span>
-                                                        <span className="text-cyber-blue font-semibold">{Math.round(d.carbs)}g</span>
-                                                    </div>
-                                                    <div className="flex justify-between space-x-4">
-                                                        <span className="text-gray-500">Fats:</span>
-                                                        <span className="text-cyber-pink font-semibold">{Math.round(d.fat)}g</span>
-                                                    </div>
-                                                    <div className="text-[8px] mt-1 pt-1 border-t border-gray-800 text-gray-500 uppercase tracking-widest text-center font-bold">
-                                                        {d.calories === 0 ? 'No Logs recorded' : d.calories >= targetCals * 0.95 && d.calories <= targetCals * 1.05 ? 'Target Reached ✅' : d.calories > targetCals * 1.05 ? 'Target Exceeded 📈' : 'Below Target 📉'}
-                                                    </div>
-                                                </div>
-
                                                 {/* Plotted Point */}
                                                 <div 
                                                     className="absolute w-3.5 h-3.5 flex items-center justify-center -translate-y-1/2"
@@ -997,6 +1057,38 @@ export default function DietLog() {
                                         );
                                     })}
                                 </div>
+
+                                {/* Single Dynamic Tooltip with Dynamic Position/Collision Detection */}
+                                {activeTooltip && (
+                                    <div 
+                                        ref={tooltipRef}
+                                        className="absolute bg-[#09090f]/95 border border-gray-800 text-[10px] rounded-lg p-2.5 z-30 pointer-events-none text-left shadow-[0_0_15px_rgba(0,0,0,0.8)] font-orbitron whitespace-nowrap space-y-1.5 backdrop-blur-sm transition-all duration-150"
+                                        style={getTooltipStyle(activeTooltip)}
+                                    >
+                                        <div className="text-white font-bold border-b border-gray-800 pb-1 mb-1">{activeTooltip.d.label}</div>
+                                        <div className="flex justify-between space-x-4">
+                                            <span className="text-gray-500">Calories:</span>
+                                            <span className={activeTooltip.d.calories >= targetCals * 0.95 ? "text-emerald-400 font-semibold" : "text-cyber-cyan"}>
+                                                {activeTooltip.d.calories} / {targetCals} kcal
+                                            </span>
+                                        </div>
+                                        <div className="flex justify-between space-x-4">
+                                            <span className="text-gray-500">Protein:</span>
+                                            <span className="text-white font-semibold">{Math.round(activeTooltip.d.protein)}g</span>
+                                        </div>
+                                        <div className="flex justify-between space-x-4">
+                                            <span className="text-gray-500">Carbs:</span>
+                                            <span className="text-cyber-blue font-semibold">{Math.round(activeTooltip.d.carbs)}g</span>
+                                        </div>
+                                        <div className="flex justify-between space-x-4">
+                                            <span className="text-gray-500">Fats:</span>
+                                            <span className="text-cyber-pink font-semibold">{Math.round(activeTooltip.d.fat)}g</span>
+                                        </div>
+                                        <div className="text-[8px] mt-1 pt-1 border-t border-gray-800 text-gray-500 uppercase tracking-widest text-center font-bold">
+                                            {activeTooltip.d.calories === 0 ? 'No Logs recorded' : activeTooltip.d.calories >= targetCals * 0.95 && activeTooltip.d.calories <= targetCals * 1.05 ? 'Target Reached ✅' : activeTooltip.d.calories > targetCals * 1.05 ? 'Target Exceeded 📈' : 'Below Target 📉'}
+                                        </div>
+                                    </div>
+                                )}
                             </div>
 
                             {/* Labels Row */}
