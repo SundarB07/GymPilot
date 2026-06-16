@@ -60,15 +60,24 @@ export const AuthProvider = ({ children }) => {
     }
 
     const signOut = async () => {
+        setDietPlan(null)
+        setDietPlanLoaded(false)
         return supabase.auth.signOut()
     }
+
+    const [dietPlan, setDietPlan] = useState(null)
+    const [dietPlanLoaded, setDietPlanLoaded] = useState(false)
 
     const value = {
         signUp,
         signIn,
         signOut,
         user,
-        loading
+        loading,
+        dietPlan,
+        setDietPlan,
+        dietPlanLoaded,
+        setDietPlanLoaded
     }
 
     return (

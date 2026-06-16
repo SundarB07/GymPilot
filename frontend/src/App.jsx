@@ -9,6 +9,8 @@ import GeneratePlan from './pages/GeneratePlan';
 import MyPlan from './pages/MyPlan';
 import TodayWorkout from './pages/TodayWorkout';
 import DietLog from './pages/DietLog';
+import GenerateDietPlan from './pages/GenerateDietPlan';
+import MyDietPlan from './pages/MyDietPlan';
 
 function App() {
   return (
@@ -24,6 +26,8 @@ function App() {
             <Route path="/generate-plan" element={<GeneratePlan />} />
             <Route path="/plan" element={<MyPlan />} />
             <Route path="/workout" element={<TodayWorkout />} />
+            <Route path="/diet-plan" element={<MyDietPlan />} />
+            <Route path="/generate-diet" element={<GenerateDietPlan />} />
             <Route path="/diet" element={<DietLog />} />
           </Route>
         </Routes>
