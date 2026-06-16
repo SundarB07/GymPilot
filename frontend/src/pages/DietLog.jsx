@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
-import { Apple, Plus, Loader2, Info, BarChart2, ListCollapse } from 'lucide-react';
+import { Apple, Plus, Loader2, Info, BarChart2, ListCollapse, Trash2 } from 'lucide-react';
 
 export default function DietLog() {
     const { user } = useAuth();
@@ -31,13 +31,91 @@ export default function DietLog() {
     const [creatineTaken, setCreatineTaken] = useState(false);
     const [creatineGrams, setCreatineGrams] = useState('');
 
+    // Planned foods and database auto-complete states
+    const [plannedFoods, setPlannedFoods] = useState([]);
+    const [checkedFoods, setCheckedFoods] = useState({});
+    const [dbFoods, setDbFoods] = useState([]);
+    const [searchQuery, setSearchQuery] = useState('');
+    const [suggestions, setSuggestions] = useState([]);
+
+    const [prevMealType, setPrevMealType] = useState('Breakfast');
+    const [prevPlanId, setPrevPlanId] = useState(null);
+
+    // States for custom food quantity prompts
+    const [showAddExtra, setShowAddExtra] = useState(false);
+    const [selectedDbFood, setSelectedDbFood] = useState(null);
+    const [quantity, setQuantity] = useState('');
+    const [showConsumed, setShowConsumed] = useState(false);
+
+    // Reset extra food states when meal type changes
+    useEffect(() => {
+        setFoodItems('');
+        setCalories('');
+        setProtein('');
+        setCarbs('');
+        setFat('');
+        setFiber('');
+        setQuantity('');
+        setSelectedDbFood(null);
+        setShowAddExtra(false);
+    }, [mealType]);
+
     useEffect(() => {
         if (user) {
             fetchLogs();
             fetchActiveDietPlan();
             fetchHistoricalLogs();
+            fetchDbFoods();
         }
     }, [user]);
+
+    async function fetchDbFoods() {
+        const { data } = await supabase.from('foods').select('*');
+        if (data) setDbFoods(data);
+    }
+
+    const isFoodConsumedToday = (itemName, currentMealType) => {
+        const logsForMeal = logs.filter(log => {
+            const logMeal = (log.meal_type || '').toLowerCase().replace('-', ' ');
+            const targetMeal = currentMealType.toLowerCase().replace('-', ' ');
+            return logMeal === targetMeal;
+        });
+
+        return logsForMeal.some(log => {
+            const itemsList = (log.food_items || '').split(',').map(s => s.trim().toLowerCase());
+            return itemsList.some(loggedItem => {
+                const cleanItem = itemName.toLowerCase().trim();
+                return loggedItem === cleanItem || loggedItem.includes(cleanItem) || cleanItem.includes(loggedItem);
+            });
+        });
+    };
+
+    useEffect(() => {
+        if (!activePlan) {
+            setPlannedFoods([]);
+            setCheckedFoods({});
+            setPrevMealType(mealType);
+            setPrevPlanId(activePlan?.id || null);
+            return;
+        }
+        const selectedMealObj = activePlan.plan_data?.meals?.find(m => {
+            const cleanMealName = m.name.toLowerCase();
+            const cleanSelected = mealType.toLowerCase().replace('-', ' ');
+            return cleanMealName.includes(cleanSelected) || cleanSelected.includes(cleanMealName);
+        });
+        const items = selectedMealObj?.items || [];
+        setPlannedFoods(items);
+
+        const initialChecked = {};
+        items.forEach((item, idx) => {
+            const consumed = isFoodConsumedToday(item.name, mealType);
+            initialChecked[idx] = !consumed;
+        });
+        setCheckedFoods(initialChecked);
+        
+        setPrevMealType(mealType);
+        setPrevPlanId(activePlan.id);
+    }, [mealType, activePlan, logs]);
 
     async function fetchActiveDietPlan() {
         try {
@@ -46,7 +124,14 @@ export default function DietLog() {
                 .select('*')
                 .eq('user_id', user.id)
                 .single();
-            if (data) setActivePlan(data);
+            if (data) {
+                setActivePlan(prev => {
+                    if (prev && prev.id === data.id && prev.updated_at === data.updated_at) {
+                        return prev;
+                    }
+                    return data;
+                });
+            }
         } catch (err) {
             console.error('Error fetching diet plan:', err);
         }
@@ -89,24 +174,130 @@ export default function DietLog() {
         }
     }
 
+    const getPlannedTotals = () => {
+        let cals = 0, prot = 0, carb = 0, ft = 0, fib = 0;
+        plannedFoods.forEach((item, idx) => {
+            if (checkedFoods[idx]) {
+                cals += Number(item.calories || 0);
+                prot += Number(item.protein || 0);
+                carb += Number(item.carbs || 0);
+                ft += Number(item.fat || 0);
+                fib += Number(item.fiber || 0);
+            }
+        });
+        return { calories: cals, protein: prot, carbs: carb, fat: ft, fiber: fib };
+    };
+
+    const handleSearchChange = (query) => {
+        setSearchQuery(query);
+        if (!query.trim()) {
+            setSuggestions([]);
+            return;
+        }
+        const filtered = dbFoods.filter(f => 
+            f.food_name.toLowerCase().includes(query.toLowerCase())
+        ).slice(0, 5);
+        setSuggestions(filtered);
+    };
+
+    const getFoodUnitAndServing = (food) => {
+        if (!food) return { unit: 'g', dbServing: 100, promptText: 'Enter grams' };
+        const name = food.food_name.toLowerCase();
+        const cat = (food.category || '').toLowerCase();
+
+        if (name.includes('egg white')) {
+            return { unit: 'egg whites', dbServing: 100 / 33, promptText: 'Enter number of egg whites' };
+        }
+        if (name.includes('egg')) {
+            return { unit: 'eggs', dbServing: 2, promptText: 'Enter number of eggs' };
+        }
+        if (name.includes('banana') || name.includes('apple') || name.includes('chapati') || name.includes('roti') || name.includes('idli') || name.includes('dosa') || name.includes('appam')) {
+            let label = 'pieces';
+            if (name.includes('banana')) label = 'bananas';
+            else if (name.includes('apple')) label = 'apples';
+            else if (name.includes('chapati') || name.includes('roti')) label = 'chapatis';
+            else if (name.includes('idli')) label = 'idlis';
+            else if (name.includes('dosa')) label = 'dosas';
+            else if (name.includes('appam')) label = 'appams';
+            
+            return { unit: label, dbServing: 1, promptText: `Enter number of ${label}` };
+        }
+        if (cat === 'drink' || name.includes('milk') || name.includes('buttermilk')) {
+            return { unit: 'ml', dbServing: 100, promptText: 'Enter ml' };
+        }
+        return { unit: 'g', dbServing: 100, promptText: 'Enter grams' };
+    };
+
+    const handleQuantityChange = (val) => {
+        setQuantity(val);
+        if (!selectedDbFood) return;
+        const qty = parseFloat(val);
+        if (!qty || isNaN(qty)) {
+            setCalories('');
+            setProtein('');
+            setCarbs('');
+            setFat('');
+            setFiber('');
+            return;
+        }
+        const { dbServing } = getFoodUnitAndServing(selectedDbFood);
+        const scale = qty / dbServing;
+        
+        setCalories(Math.round(Number(selectedDbFood.calories_kcal) * scale));
+        setProtein(Math.round(Number(selectedDbFood.protein_g) * scale));
+        setCarbs(Math.round(Number(selectedDbFood.carbs_g) * scale));
+        setFat(Math.round(Number(selectedDbFood.fat_g) * scale));
+        setFiber(Math.round(Number(selectedDbFood.fiber_g || 0) * scale));
+    };
+
+    const selectSuggestion = (food) => {
+        setSelectedDbFood(food);
+        setSearchQuery('');
+        setSuggestions([]);
+    };
+
+    // Format foodItems text dynamically when database food selection and quantity change
+    useEffect(() => {
+        if (selectedDbFood) {
+            const { unit } = getFoodUnitAndServing(selectedDbFood);
+            const qtyStr = quantity ? `${quantity}${unit === 'g' || unit === 'ml' ? '' : ' '}${unit}` : '';
+            setFoodItems([qtyStr, selectedDbFood.food_name].filter(Boolean).join(' '));
+        }
+    }, [selectedDbFood, quantity]);
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setLoading(true);
         setError('');
 
         try {
+            const plannedTotals = getPlannedTotals();
+            const activePlannedNames = plannedFoods.filter((_, idx) => checkedFoods[idx]).map(item => item.name).join(', ');
+            
+            const finalFoodItems = [activePlannedNames, foodItems].filter(Boolean).join(', ');
+            
+            if (!finalFoodItems.trim()) {
+                throw new Error("Please select at least one planned food or log custom food items.");
+            }
+
+            const finalCalories = plannedTotals.calories + (parseFloat(calories) || 0);
+            const finalProtein = plannedTotals.protein + (parseFloat(protein) || 0);
+            const finalCarbs = plannedTotals.carbs + (parseFloat(carbs) || 0);
+            const finalFat = plannedTotals.fat + (parseFloat(fat) || 0);
+            const finalFiber = plannedTotals.fiber + (parseFloat(fiber) || 0);
+
             const { error: insertError } = await supabase
                 .from('dietlogs')
                 .insert([{
                     user_id: user.id,
                     date: new Date().toISOString().split('T')[0],
                     meal_type: mealType,
-                    food_items: foodItems,
-                    calories: parseFloat(calories) || 0,
-                    protein: parseFloat(protein) || 0,
-                    carbs: parseFloat(carbs) || 0,
-                    fat: parseFloat(fat) || 0,
-                    fiber: parseFloat(fiber) || 0,
+                    food_items: finalFoodItems,
+                    calories: parseFloat(finalCalories) || 0,
+                    protein: parseFloat(finalProtein) || 0,
+                    carbs: parseFloat(finalCarbs) || 0,
+                    fat: parseFloat(finalFat) || 0,
+                    fiber: parseFloat(finalFiber) || 0,
                     whey_taken: wheyTaken,
                     whey_grams: wheyTaken ? (parseFloat(wheyGrams) || 0) : 0,
                     creatine_taken: creatineTaken,
@@ -126,6 +317,9 @@ export default function DietLog() {
             setWheyGrams('');
             setCreatineTaken(false);
             setCreatineGrams('');
+            setQuantity('');
+            setSelectedDbFood(null);
+            setShowAddExtra(false);
 
             // Refresh logs
             fetchLogs();
@@ -135,6 +329,23 @@ export default function DietLog() {
             setError(err.message || 'Failed to log meal.');
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleDeleteLog = async (logId) => {
+        if (!window.confirm("Are you sure you want to delete this log entry?")) return;
+        try {
+            const { error: deleteError } = await supabase
+                .from('dietlogs')
+                .delete()
+                .eq('id', logId);
+            if (deleteError) throw deleteError;
+            
+            fetchLogs();
+            fetchHistoricalLogs();
+        } catch (err) {
+            console.error('Error deleting log:', err);
+            alert('Failed to delete log entry.');
         }
     };
 
@@ -253,7 +464,7 @@ export default function DietLog() {
 
                         {error && <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-2 rounded text-xs">{error}</div>}
 
-                        <div className="grid grid-cols-2 gap-3 relative z-10">
+                        <div className="grid grid-cols-1 gap-3 relative z-10">
                             <div>
                                 <label className="text-[10px] text-gray-400 uppercase tracking-wide ml-1">Meal Type</label>
                                 <select
@@ -265,76 +476,252 @@ export default function DietLog() {
                                     <option value="Lunch">Lunch</option>
                                     <option value="Dinner">Dinner</option>
                                     <option value="Snack">Snack</option>
-                                    <option value="Pre-workout">Pre-workout</option>
-                                    <option value="Post-workout">Post-workout</option>
+                                    <option value="Pre Workout">Pre Workout</option>
+                                    <option value="Post Workout">Post Workout</option>
                                 </select>
-                            </div>
-                            <div>
-                                <label className="text-[10px] text-gray-400 uppercase tracking-wide ml-1">Food Items</label>
-                                <input
-                                    type="text"
-                                    required
-                                    value={foodItems}
-                                    onChange={(e) => setFoodItems(e.target.value)}
-                                    placeholder="e.g. Oats, Egg Whites, banana"
-                                    className="w-full bg-[#050508] border border-gray-700/50 focus:border-purple-400 rounded p-2 text-white text-sm mt-1"
-                                />
                             </div>
                         </div>
 
-                        {/* Nutrition Matrix Inputs */}
-                        <div className="grid grid-cols-5 gap-2 relative z-10">
-                            <div>
-                                <label className="text-[9px] text-gray-400 uppercase tracking-wide">Calories (kcal)</label>
-                                <input
-                                    type="number"
-                                    value={calories}
-                                    onChange={(e) => setCalories(e.target.value)}
-                                    placeholder="kcal"
-                                    className="w-full bg-[#050508] border border-gray-700/40 rounded p-2 text-white text-xs mt-1 focus:border-purple-400"
-                                />
+                        {/* Planned Foods Checklist */}
+                        {(() => {
+                            const itemsWithStatus = plannedFoods.map((item, idx) => {
+                                const consumed = isFoodConsumedToday(item.name, mealType);
+                                return { item, idx, consumed };
+                            });
+                            const pendingItems = itemsWithStatus.filter(x => !x.consumed);
+
+                            if (plannedFoods.length === 0) return null;
+
+                            return (
+                                <div className="bg-[#050508] border border-gray-800 p-4 rounded-lg space-y-3 relative z-10">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-[10px] text-cyber-cyan uppercase font-orbitron tracking-wider block">Planned Foods</span>
+                                        <label className="flex items-center space-x-1.5 cursor-pointer">
+                                            <input
+                                                type="checkbox"
+                                                checked={showConsumed}
+                                                onChange={() => setShowConsumed(!showConsumed)}
+                                                className="w-3.5 h-3.5 rounded border border-gray-700 bg-[#050508] checked:bg-cyber-cyan checked:border-cyber-cyan appearance-none cursor-pointer relative checked:before:content-['✓'] checked:before:absolute checked:before:text-black checked:before:text-[9px] checked:before:font-bold checked:before:flex checked:before:items-center checked:before:justify-center checked:before:inset-0 transition-all"
+                                            />
+                                            <span className="text-[9px] text-gray-400 font-orbitron uppercase select-none">Show Consumed Foods</span>
+                                        </label>
+                                    </div>
+
+                                    {pendingItems.length === 0 && (
+                                        <div className="text-center p-4 border border-dashed border-green-500/30 bg-green-500/5 rounded text-green-400 font-semibold font-orbitron text-xs tracking-wider">
+                                            {mealType} Completed ✅
+                                        </div>
+                                    )}
+
+                                    {(pendingItems.length > 0 || showConsumed) && (
+                                        <div className="space-y-2">
+                                            {itemsWithStatus.map(({ item, idx, consumed }) => {
+                                                if (consumed && !showConsumed) return null;
+
+                                                return (
+                                                    <label key={idx} className={`flex items-center justify-between p-2 rounded bg-gray-900/40 border transition-all cursor-pointer ${consumed ? 'border-gray-800/20 opacity-40' : 'border-gray-800/60 hover:border-gray-700/50'}`}>
+                                                        <div className="flex items-center space-x-2">
+                                                            {consumed ? (
+                                                                <div className="w-4 h-4 rounded-full bg-green-500/20 border border-green-500 flex items-center justify-center text-green-400 text-[9px] font-bold">
+                                                                    ✓
+                                                                </div>
+                                                            ) : (
+                                                                <input
+                                                                    type="checkbox"
+                                                                    checked={!!checkedFoods[idx]}
+                                                                    onChange={() => setCheckedFoods({ ...checkedFoods, [idx]: !checkedFoods[idx] })}
+                                                                    className="w-4 h-4 rounded border border-gray-700 bg-[#050508] checked:bg-cyber-cyan checked:border-cyber-cyan appearance-none cursor-pointer relative checked:before:content-['✓'] checked:before:absolute checked:before:text-black checked:before:text-[10px] checked:before:font-bold checked:before:flex checked:before:items-center checked:before:justify-center checked:before:inset-0 transition-all"
+                                                                />
+                                                            )}
+                                                            <span className={`text-sm font-semibold ${consumed ? 'text-gray-500 line-through' : 'text-white'}`}>{item.name}</span>
+                                                        </div>
+                                                        <span className="text-xs text-gray-500 font-orbitron">
+                                                            {item.calories} kcal | P: {item.protein}g | C: {item.carbs}g | F: {item.fat}g
+                                                        </span>
+                                                    </label>
+                                                );
+                                            })}
+                                        </div>
+                                    )}
+
+                                    {!showAddExtra && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setShowAddExtra(true)}
+                                            className="w-full mt-2 py-2 border border-dashed border-cyber-cyan/30 hover:border-cyber-cyan/60 rounded bg-cyber-cyan/5 hover:bg-cyber-cyan/10 text-cyber-cyan text-xs font-orbitron uppercase transition-all tracking-wider flex items-center justify-center cursor-pointer"
+                                        >
+                                            <Plus className="mr-1.5 w-3.5 h-3.5" />
+                                            Add Other Food
+                                        </button>
+                                    )}
+                                </div>
+                            );
+                        })()}
+
+                        {plannedFoods.length === 0 && (
+                            <div className="bg-[#050508] border border-gray-800/40 p-4 rounded-lg space-y-2 relative z-10 text-center">
+                                <p className="text-xs text-gray-500 italic">No planned foods found in your current diet plan for {mealType}.</p>
+                                {!showAddExtra && (
+                                    <button
+                                        type="button"
+                                        onClick={() => setShowAddExtra(true)}
+                                        className="mx-auto py-2 px-4 border border-dashed border-cyber-cyan/30 hover:border-cyber-cyan/60 rounded bg-cyber-cyan/5 hover:bg-cyber-cyan/10 text-cyber-cyan text-xs font-orbitron uppercase transition-all tracking-wider flex items-center justify-center cursor-pointer"
+                                    >
+                                        <Plus className="mr-1.5 w-3.5 h-3.5" />
+                                        Add Other Food
+                                    </button>
+                                )}
                             </div>
-                            <div>
-                                <label className="text-[9px] text-gray-400 uppercase tracking-wide">Protein (g)</label>
-                                <input
-                                    type="number"
-                                    value={protein}
-                                    onChange={(e) => setProtein(e.target.value)}
-                                    placeholder="g"
-                                    className="w-full bg-[#050508] border border-gray-700/40 rounded p-2 text-white text-xs mt-1 focus:border-purple-400"
-                                />
+                        )}
+
+                        {/* Custom / Extra Food Autocomplete & Inputs */}
+                        {showAddExtra && (
+                            <div className="space-y-4 p-4 rounded-lg border border-gray-800/60 bg-[#0a0a0f] relative z-10">
+                                <span className="text-[10px] text-gray-400 uppercase tracking-wider font-orbitron block">
+                                    Add Other Food
+                                </span>
+
+                                {!selectedDbFood ? (
+                                    <>
+                                        {/* Autocomplete Search Bar */}
+                                        <div className="relative">
+                                            <label className="text-[9px] text-gray-500 uppercase tracking-wider block mb-1">Search Food Database</label>
+                                            <input
+                                                type="text"
+                                                value={searchQuery}
+                                                onChange={(e) => handleSearchChange(e.target.value)}
+                                                placeholder="🔍 Search food database (e.g. Oats, Egg, Paneer...)"
+                                                className="w-full bg-[#050508] border border-gray-700/50 focus:border-purple-400 rounded p-2 text-white text-xs"
+                                            />
+                                            {suggestions.length > 0 && (
+                                                <div className="absolute left-0 right-0 mt-1 bg-[#09090f] border border-gray-800 rounded shadow-xl z-30 max-h-48 overflow-y-auto divide-y divide-gray-900">
+                                                    {suggestions.map((food) => (
+                                                        <button
+                                                            key={food.id}
+                                                            type="button"
+                                                            onClick={() => selectSuggestion(food)}
+                                                            className="w-full text-left p-2 hover:bg-cyber-blue/10 transition-colors flex justify-between items-center text-xs text-gray-300 cursor-pointer"
+                                                        >
+                                                            <span>{food.food_name}</span>
+                                                            <span className="text-[10px] text-gray-500 font-orbitron">{food.calories_kcal} kcal / 100g</span>
+                                                        </button>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </div>
+
+                                        {/* Manual / Fallback Entry */}
+                                        <div className="grid grid-cols-1 gap-2 pt-2 border-t border-gray-900">
+                                            <span className="text-[9px] text-gray-500 uppercase tracking-wider block">Or Enter Custom Food Name</span>
+                                            <div>
+                                                <input
+                                                    type="text"
+                                                    value={foodItems}
+                                                    onChange={(e) => setFoodItems(e.target.value)}
+                                                    placeholder="e.g. Custom Protein Shake"
+                                                    className="w-full bg-[#050508] border border-gray-750 focus:border-purple-400 rounded p-2 text-white text-xs mt-1"
+                                                />
+                                            </div>
+                                        </div>
+                                    </>
+                                ) : (
+                                    <div className="bg-[#050508] border border-gray-800 p-3 rounded space-y-3">
+                                        <div className="flex justify-between items-center">
+                                            <span className="text-sm font-semibold text-cyber-cyan">{selectedDbFood.food_name}</span>
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setSelectedDbFood(null);
+                                                    setQuantity('');
+                                                    setFoodItems('');
+                                                    setCalories('');
+                                                    setProtein('');
+                                                    setCarbs('');
+                                                    setFat('');
+                                                    setFiber('');
+                                                }}
+                                                className="text-[10px] text-red-400 hover:text-red-300 font-orbitron uppercase border border-red-500/20 px-2 py-0.5 rounded cursor-pointer"
+                                            >
+                                                Clear Selection
+                                            </button>
+                                        </div>
+
+                                        {/* Quantity input */}
+                                        <div>
+                                            <label className="text-[9px] text-gray-400 uppercase tracking-wider block mb-1">
+                                                {getFoodUnitAndServing(selectedDbFood).promptText}
+                                            </label>
+                                            <input
+                                                type="number"
+                                                value={quantity}
+                                                onChange={(e) => handleQuantityChange(e.target.value)}
+                                                placeholder={`e.g. ${getFoodUnitAndServing(selectedDbFood).unit === 'g' ? '150' : getFoodUnitAndServing(selectedDbFood).unit === 'ml' ? '250' : '2'}`}
+                                                className="w-full bg-[#050508] border border-gray-750 focus:border-purple-400 rounded p-2 text-white text-xs"
+                                            />
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Nutrition Matrix (Read-only if DB food, editable if manual fallback) */}
+                                <div className="grid grid-cols-5 gap-2 pt-2 border-t border-gray-900">
+                                    <div>
+                                        <label className="text-[9px] text-gray-550 uppercase tracking-wider block">Calories</label>
+                                        <input
+                                            type="number"
+                                            value={calories}
+                                            onChange={(e) => !selectedDbFood && setCalories(e.target.value)}
+                                            readOnly={!!selectedDbFood}
+                                            placeholder="kcal"
+                                            className={`w-full bg-[#050508] border border-gray-750 rounded p-2 text-white text-xs mt-1 focus:border-purple-400 ${selectedDbFood ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] text-gray-550 uppercase tracking-wider block">Protein (g)</label>
+                                        <input
+                                            type="number"
+                                            value={protein}
+                                            onChange={(e) => !selectedDbFood && setProtein(e.target.value)}
+                                            readOnly={!!selectedDbFood}
+                                            placeholder="g"
+                                            className={`w-full bg-[#050508] border border-gray-750 rounded p-2 text-white text-xs mt-1 focus:border-purple-400 ${selectedDbFood ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] text-gray-550 uppercase tracking-wider block">Carbs (g)</label>
+                                        <input
+                                            type="number"
+                                            value={carbs}
+                                            onChange={(e) => !selectedDbFood && setCarbs(e.target.value)}
+                                            readOnly={!!selectedDbFood}
+                                            placeholder="g"
+                                            className={`w-full bg-[#050508] border border-gray-750 rounded p-2 text-white text-xs mt-1 focus:border-purple-400 ${selectedDbFood ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] text-gray-550 uppercase tracking-wider block">Fats (g)</label>
+                                        <input
+                                            type="number"
+                                            value={fat}
+                                            onChange={(e) => !selectedDbFood && setFat(e.target.value)}
+                                            readOnly={!!selectedDbFood}
+                                            placeholder="g"
+                                            className={`w-full bg-[#050508] border border-gray-750 rounded p-2 text-white text-xs mt-1 focus:border-purple-400 ${selectedDbFood ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-[9px] text-gray-550 uppercase tracking-wider block">Fiber (g)</label>
+                                        <input
+                                            type="number"
+                                            value={fiber}
+                                            onChange={(e) => !selectedDbFood && setFiber(e.target.value)}
+                                            readOnly={!!selectedDbFood}
+                                            placeholder="g"
+                                            className={`w-full bg-[#050508] border border-gray-750 rounded p-2 text-white text-xs mt-1 focus:border-purple-400 ${selectedDbFood ? 'opacity-60 cursor-not-allowed' : ''}`}
+                                        />
+                                    </div>
+                                </div>
                             </div>
-                            <div>
-                                <label className="text-[9px] text-gray-400 uppercase tracking-wide">Carbs (g)</label>
-                                <input
-                                    type="number"
-                                    value={carbs}
-                                    onChange={(e) => setCarbs(e.target.value)}
-                                    placeholder="g"
-                                    className="w-full bg-[#050508] border border-gray-700/40 rounded p-2 text-white text-xs mt-1 focus:border-purple-400"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[9px] text-gray-400 uppercase tracking-wide">Fats (g)</label>
-                                <input
-                                    type="number"
-                                    value={fat}
-                                    onChange={(e) => setFat(e.target.value)}
-                                    placeholder="g"
-                                    className="w-full bg-[#050508] border border-gray-700/40 rounded p-2 text-white text-xs mt-1 focus:border-purple-400"
-                                />
-                            </div>
-                            <div>
-                                <label className="text-[9px] text-gray-400 uppercase tracking-wide">Fiber (g)</label>
-                                <input
-                                    type="number"
-                                    value={fiber}
-                                    onChange={(e) => setFiber(e.target.value)}
-                                    placeholder="g"
-                                    className="w-full bg-[#050508] border border-gray-700/40 rounded p-2 text-white text-xs mt-1 focus:border-purple-400"
-                                />
-                            </div>
-                        </div>
+                        )}
 
                         {/* Supplement Add-ons */}
                         <div className="p-3 rounded border border-gray-800 bg-[#0a0a0f] space-y-3 relative z-10">
@@ -412,13 +799,22 @@ export default function DietLog() {
                                     <div key={log.id} className="cyber-card p-4 border border-purple-900/30 hover:border-purple-500/30">
                                         <div className="flex justify-between items-start mb-2">
                                             <span className="text-xs font-bold text-cyber-cyan bg-cyber-blue/5 border border-cyber-cyan/20 px-2 py-0.5 rounded">{log.meal_type}</span>
-                                            <span className="text-[10px] text-gray-500 font-orbitron">
-                                                {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                            </span>
+                                            <div className="flex items-center space-x-3">
+                                                <span className="text-[10px] text-gray-500 font-orbitron">
+                                                    {new Date(log.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </span>
+                                                <button
+                                                    onClick={() => handleDeleteLog(log.id)}
+                                                    className="text-gray-500 hover:text-red-400 p-0.5 rounded hover:bg-red-500/10 transition-all cursor-pointer"
+                                                    title="Delete this log item"
+                                                >
+                                                    <Trash2 size={13} />
+                                                </button>
+                                            </div>
                                         </div>
                                         <p className="text-gray-200 text-sm mb-3">{log.food_items}</p>
 
-                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 border-t border-gray-850 pt-3 text-center">
+                                        <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 border-t border-gray-800/60 pt-3 text-center">
                                             <div className="flex flex-col">
                                                 <span className="text-[8px] text-gray-500 uppercase tracking-widest leading-none mb-1">Calories</span>
                                                 <span className="text-xs text-white font-orbitron font-semibold">{log.calories || 0} kcal</span>
