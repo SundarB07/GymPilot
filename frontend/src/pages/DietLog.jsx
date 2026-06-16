@@ -417,9 +417,10 @@ export default function DietLog() {
         const pointY = containerHeight - (tooltip.yPercent / 100) * containerHeight;
 
         // Tooltip dimensions (either measured or fallback)
-        // Allow reduction in width if necessary to fit on very narrow screens
-        const maxAllowedWidth = Math.min(tooltipSize.width, containerWidth - 2 * margin);
-        const w = maxAllowedWidth;
+        const minW = 180;
+        const maxW = 240;
+        const maxAllowedWidth = Math.min(maxW, containerWidth - 2 * margin);
+        const w = Math.max(Math.min(minW, maxAllowedWidth), Math.min(tooltipSize.width, maxAllowedWidth));
         const h = tooltipSize.height;
 
         // Determine if point is near the top edge
@@ -1057,38 +1058,34 @@ export default function DietLog() {
                                         );
                                     })}
                                 </div>
-
                                 {/* Single Dynamic Tooltip with Dynamic Position/Collision Detection */}
-                                {activeTooltip && (
-                                    <div 
-                                        ref={tooltipRef}
-                                        className="absolute bg-[#09090f]/95 border border-gray-800 text-[10px] rounded-lg p-2.5 z-30 pointer-events-none text-left shadow-[0_0_15px_rgba(0,0,0,0.8)] font-orbitron whitespace-nowrap space-y-1.5 backdrop-blur-sm transition-all duration-150"
-                                        style={getTooltipStyle(activeTooltip)}
-                                    >
-                                        <div className="text-white font-bold border-b border-gray-800 pb-1 mb-1">{activeTooltip.d.label}</div>
-                                        <div className="flex justify-between space-x-4">
-                                            <span className="text-gray-500">Calories:</span>
-                                            <span className={activeTooltip.d.calories >= targetCals * 0.95 ? "text-emerald-400 font-semibold" : "text-cyber-cyan"}>
-                                                {activeTooltip.d.calories} / {targetCals} kcal
-                                            </span>
-                                        </div>
-                                        <div className="flex justify-between space-x-4">
-                                            <span className="text-gray-500">Protein:</span>
-                                            <span className="text-white font-semibold">{Math.round(activeTooltip.d.protein)}g</span>
-                                        </div>
-                                        <div className="flex justify-between space-x-4">
-                                            <span className="text-gray-500">Carbs:</span>
-                                            <span className="text-cyber-blue font-semibold">{Math.round(activeTooltip.d.carbs)}g</span>
-                                        </div>
-                                        <div className="flex justify-between space-x-4">
-                                            <span className="text-gray-500">Fats:</span>
-                                            <span className="text-cyber-pink font-semibold">{Math.round(activeTooltip.d.fat)}g</span>
-                                        </div>
-                                        <div className="text-[8px] mt-1 pt-1 border-t border-gray-800 text-gray-500 uppercase tracking-widest text-center font-bold">
-                                            {activeTooltip.d.calories === 0 ? 'No Logs recorded' : activeTooltip.d.calories >= targetCals * 0.95 && activeTooltip.d.calories <= targetCals * 1.05 ? 'Target Reached ✅' : activeTooltip.d.calories > targetCals * 1.05 ? 'Target Exceeded 📈' : 'Below Target 📉'}
-                                        </div>
-                                    </div>
-                                )}
+                                 {activeTooltip && (
+                                     <div 
+                                         ref={tooltipRef}
+                                         className="absolute bg-[#09090f]/95 border border-gray-800 text-[10px] rounded-lg p-3 z-30 pointer-events-none text-left shadow-[0_0_15px_rgba(0,0,0,0.8)] font-orbitron backdrop-blur-sm transition-all duration-150 flex flex-col justify-between"
+                                         style={getTooltipStyle(activeTooltip)}
+                                     >
+                                         <div className="text-white font-bold border-b border-gray-800 pb-1 mb-2">{activeTooltip.d.label}</div>
+                                         <div className="grid grid-cols-[auto_1fr] gap-x-4 gap-y-1.5 items-center w-full">
+                                             <span className="text-gray-500 text-left whitespace-nowrap">Calories:</span>
+                                             <span className={`text-right font-semibold whitespace-normal break-words ${activeTooltip.d.calories >= targetCals * 0.95 ? "text-emerald-400" : "text-cyber-cyan"}`}>
+                                                 {activeTooltip.d.calories} / {targetCals} <span className="text-[9px] text-gray-400 block sm:inline whitespace-nowrap">kcal</span>
+                                             </span>
+                                             
+                                             <span className="text-gray-500 text-left whitespace-nowrap">Protein:</span>
+                                             <span className="text-white font-semibold text-right whitespace-nowrap">{Math.round(activeTooltip.d.protein)}g</span>
+                                             
+                                             <span className="text-gray-500 text-left whitespace-nowrap">Carbs:</span>
+                                             <span className="text-cyber-blue font-semibold text-right whitespace-nowrap">{Math.round(activeTooltip.d.carbs)}g</span>
+                                             
+                                             <span className="text-gray-500 text-left whitespace-nowrap">Fats:</span>
+                                             <span className="text-cyber-pink font-semibold text-right whitespace-nowrap">{Math.round(activeTooltip.d.fat)}g</span>
+                                         </div>
+                                         <div className="text-[8px] mt-2 pt-1 border-t border-gray-800 text-gray-500 uppercase tracking-widest text-center font-bold whitespace-normal">
+                                             {activeTooltip.d.calories === 0 ? 'No Logs recorded' : activeTooltip.d.calories >= targetCals * 0.95 && activeTooltip.d.calories <= targetCals * 1.05 ? 'Target Reached ✅' : activeTooltip.d.calories > targetCals * 1.05 ? 'Target Exceeded 📈' : 'Below Target 📉'}
+                                         </div>
+                                     </div>
+                                 )}
                             </div>
 
                             {/* Labels Row */}
