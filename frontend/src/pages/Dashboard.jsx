@@ -1,5 +1,5 @@
 import { Link } from 'react-router-dom';
-import { Activity, CalendarPlus, ClipboardList, Utensils } from 'lucide-react';
+import { Activity, CalendarPlus, ClipboardList, Utensils, Sparkles } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Dashboard() {
@@ -18,7 +18,7 @@ export default function Dashboard() {
                 </button>
             </div>
 
-            <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-center">
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 text-center">
                 <Link to="/plan" className="cyber-card flex flex-col items-center justify-center p-6 space-y-3 cursor-pointer">
                     <ClipboardList className="text-cyber-cyan w-10 h-10 mb-2 drop-shadow-[0_0_10px_rgba(0,245,255,0.6)]" />
                     <span className="font-orbitron text-sm font-semibold tracking-wide">My Plan</span>
@@ -32,6 +32,11 @@ export default function Dashboard() {
                 <Link to="/workout" className="cyber-card flex flex-col items-center justify-center p-6 space-y-3 cursor-pointer">
                     <Activity className="text-cyber-pink w-10 h-10 mb-2 drop-shadow-[0_0_10px_rgba(254,83,187,0.6)]" />
                     <span className="font-orbitron text-sm font-semibold tracking-wide">Today's Workout</span>
+                </Link>
+
+                <Link to="/diet-plan" className="cyber-card flex flex-col items-center justify-center p-6 space-y-3 cursor-pointer">
+                    <Sparkles className="text-emerald-400 w-10 h-10 mb-2 drop-shadow-[0_0_10px_rgba(52,211,153,0.6)]" />
+                    <span className="font-orbitron text-sm font-semibold tracking-wide">Diet Plan</span>
                 </Link>
 
                 <Link to="/diet" className="cyber-card flex flex-col items-center justify-center p-6 space-y-3 cursor-pointer">

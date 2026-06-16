@@ -70,18 +70,29 @@ export default function TodayWorkout() {
         setError('');
 
         try {
-            const logEntries = todayPlan.exercises.map(ex => ({
-                user_id: user.id,
-                workout_date: new Date().toISOString().split('T')[0],
-                day_name: todayPlan.day_name,
-                exercise_id: ex.id,
-                sets_planned: ex.sets,
-                reps_planned: ex.reps,
-                weight_used: logs[ex.id].weight ? parseFloat(logs[ex.id].weight) : null,
-                sets_completed: logs[ex.id].sets ? parseInt(logs[ex.id].sets) : null,
-                reps_completed: logs[ex.id].reps,
-                notes: logs[ex.id].notes || null
-            }));
+            const logEntries = todayPlan.exercises.map(ex => {
+                const repsStr = String(ex.reps || '');
+                const repParts = repsStr.split('-');
+                const minReps = parseInt(repParts[0], 10) || 0;
+                const maxReps = repParts[1] ? (parseInt(repParts[1], 10) || minReps) : minReps;
+
+                const userReps = logs[ex.id]?.reps;
+                const actualReps = userReps ? parseInt(userReps, 10) : null;
+
+                return {
+                    user_id: user.id,
+                    workout_date: new Date().toISOString().split('T')[0],
+                    day_name: todayPlan.day_name,
+                    exercise_id: ex.id,
+                    sets_planned: ex.sets,
+                    target_reps_min: minReps,
+                    target_reps_max: maxReps,
+                    weight_used: logs[ex.id]?.weight ? parseFloat(logs[ex.id].weight) : null,
+                    sets_completed: logs[ex.id]?.sets ? parseInt(logs[ex.id].sets, 10) : null,
+                    actual_reps: actualReps,
+                    notes: logs[ex.id]?.notes || null
+                };
+            });
 
             const { error: insertError } = await supabase
                 .from('workout_logs')

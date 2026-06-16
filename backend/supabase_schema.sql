@@ -37,10 +37,11 @@ CREATE TABLE workout_logs (
     day_name TEXT NOT NULL,
     exercise_id UUID REFERENCES exercises(id) ON DELETE SET NULL,
     sets_planned INTEGER NOT NULL,
-    reps_planned TEXT NOT NULL,
+    target_reps_min INTEGER NOT NULL,
+    target_reps_max INTEGER NOT NULL,
     weight_used numeric,
     sets_completed INTEGER,
-    reps_completed TEXT,
+    actual_reps INTEGER,
     notes TEXT,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
