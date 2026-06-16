@@ -868,55 +868,64 @@ export default function DietLog() {
                     {/* Chart Container (SVG-based Bar Chart) */}
                     <div className="space-y-4 overflow-x-auto pb-2 scrollbar-thin">
                         <div
-                            className="h-48 flex items-end justify-between border-b border-gray-850 pb-2 pt-4 relative"
+                            className="h-48 flex flex-col justify-end border-b border-gray-800/60 pb-2 pt-4 relative"
                             style={{ 
                                 minWidth: analyticsRange === 'monthly' ? '1200px' : '100%',
                                 width: '100%'
                             }}
                         >
-                            {/* Target Guideline */}
-                            {activePlan && (
-                                <div
-                                    className="absolute left-0 w-full border-t border-dashed border-red-500/50 z-10 flex items-center justify-end pr-2"
-                                    style={{
-                                        bottom: `${(targetCals / maxChartHeight) * 100}%`
-                                    }}
-                                >
-                                    <span className="text-[8px] text-red-400 font-orbitron bg-cyber-bg px-1 rounded -translate-y-1/2">Target: {targetCals} kcal</span>
-                                </div>
-                            )}
-
-                            {/* Bars */}
-                            {groupedData.map((d, index) => {
-                                const heightPercent = (d.calories / maxChartHeight) * 100;
-                                return (
-                                    <div key={index} className="flex-1 flex flex-col items-center group relative mx-0.5 sm:mx-1">
-                                        {/* Hover details tooltip */}
-                                        <div className="absolute bottom-full mb-1 bg-[#09090f] border border-gray-800 text-[9px] rounded p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none text-center shadow-lg font-orbitron whitespace-nowrap">
-                                            <div className="text-white font-bold">{d.label}</div>
-                                            <div className="text-cyber-cyan">{d.calories} kcal</div>
-                                            <div className="text-cyber-blue">P: {Math.round(d.protein)}g | C: {d.carbs}g</div>
-                                        </div>
-
-                                        {/* Calorie fill bar */}
-                                        <div
-                                            className="w-full bg-cyber-blue/10 border border-cyber-blue/40 rounded-t-sm group-hover:border-cyber-cyan/80 group-hover:bg-cyber-cyan/10 transition-all duration-300"
-                                            style={{ height: `${Math.max(heightPercent, 2)}%` }}
-                                        >
-                                            {/* Accent glow on top of bar */}
-                                            {d.calories > 0 && <div className="h-1 bg-cyber-blue w-full shadow-[0_0_8px_rgba(0,204,255,0.8)]"></div>}
-                                        </div>
-
-                                        {/* Label */}
-                                        <span className="text-[8px] text-gray-500 mt-2 font-orbitron text-center truncate w-full">{d.label}</span>
+                            {/* Relative Area for Bars and Guideline */}
+                            <div className="h-36 w-full flex items-end justify-between relative">
+                                {/* Target Guideline */}
+                                {activePlan && (
+                                    <div
+                                        className="absolute left-0 w-full border-t border-dashed border-red-500/50 z-10 flex items-center justify-end pr-2"
+                                        style={{
+                                            bottom: `${(targetCals / maxChartHeight) * 100}%`
+                                        }}
+                                    >
+                                        <span className="text-[8px] text-red-400 font-orbitron bg-[#050508] px-1 rounded -translate-y-1/2">Target: {targetCals} kcal</span>
                                     </div>
-                                );
-                            })}
+                                )}
+
+                                {/* Bars */}
+                                {groupedData.map((d, index) => {
+                                    const heightPercent = (d.calories / maxChartHeight) * 100;
+                                    return (
+                                        <div key={index} className="flex-1 h-full flex flex-col justify-end items-center group relative mx-0.5 sm:mx-1">
+                                            {/* Hover details tooltip */}
+                                            <div className="absolute bottom-full mb-1 bg-[#09090f] border border-gray-800 text-[9px] rounded p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-20 pointer-events-none text-center shadow-lg font-orbitron whitespace-nowrap">
+                                                <div className="text-white font-bold">{d.label}</div>
+                                                <div className="text-cyber-cyan">{d.calories} kcal</div>
+                                                <div className="text-cyber-blue">P: {Math.round(d.protein)}g | C: {d.carbs}g</div>
+                                            </div>
+
+                                            {/* Calorie fill bar */}
+                                            <div
+                                                className="w-full bg-cyber-blue/10 border border-cyber-blue/40 rounded-t-sm group-hover:border-cyber-cyan/80 group-hover:bg-cyber-cyan/10 transition-all duration-300"
+                                                style={{ height: `${Math.max(heightPercent, 2)}%` }}
+                                            >
+                                                {/* Accent glow on top of bar */}
+                                                {d.calories > 0 && <div className="h-1 bg-cyber-blue w-full shadow-[0_0_8px_rgba(0,204,255,0.8)]"></div>}
+                                            </div>
+                                        </div>
+                                    );
+                                })}
+                            </div>
+
+                            {/* Labels Row below the bars area */}
+                            <div className="w-full flex justify-between pt-2">
+                                {groupedData.map((d, index) => (
+                                    <span key={index} className="flex-1 text-[8px] text-gray-505 font-orbitron text-center truncate mx-0.5 sm:mx-1">
+                                        {d.label}
+                                    </span>
+                                ))}
+                            </div>
                         </div>
                     </div>
 
                     {/* Macro Averages Overview */}
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-gray-850">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-6 pt-4 border-t border-gray-800/60">
                         {(() => {
                             const totalC = groupedData.reduce((sum, d) => sum + d.calories, 0);
                             const totalP = groupedData.reduce((sum, d) => sum + d.protein, 0);
@@ -926,19 +935,19 @@ export default function DietLog() {
 
                             return (
                                 <>
-                                    <div className="text-center p-3 bg-[#050508] border border-gray-850 rounded">
+                                    <div className="text-center p-3 bg-[#050508] border border-gray-800/60 rounded">
                                         <span className="text-[9px] text-gray-500 uppercase tracking-widest font-orbitron block">Avg Calories</span>
                                         <span className="font-orbitron text-md text-white font-bold">{Math.round(totalC / daysWithLogs)} <span className="text-[10px] text-gray-500">kcal</span></span>
                                     </div>
-                                    <div className="text-center p-3 bg-[#050508] border border-gray-850 rounded">
+                                    <div className="text-center p-3 bg-[#050508] border border-gray-800/60 rounded">
                                         <span className="text-[9px] text-gray-500 uppercase tracking-widest font-orbitron block">Avg Protein</span>
                                         <span className="font-orbitron text-md text-cyber-cyan font-bold">{Math.round(totalP / daysWithLogs)}g</span>
                                     </div>
-                                    <div className="text-center p-3 bg-[#050508] border border-gray-850 rounded">
+                                    <div className="text-center p-3 bg-[#050508] border border-gray-800/60 rounded">
                                         <span className="text-[9px] text-gray-500 uppercase tracking-widest font-orbitron block">Avg Carbs</span>
                                         <span className="font-orbitron text-md text-cyber-blue font-bold">{Math.round(totalCb / daysWithLogs)}g</span>
                                     </div>
-                                    <div className="text-center p-3 bg-[#050508] border border-gray-850 rounded">
+                                    <div className="text-center p-3 bg-[#050508] border border-gray-800/60 rounded">
                                         <span className="text-[9px] text-gray-500 uppercase tracking-widest font-orbitron block">Avg Fats</span>
                                         <span className="font-orbitron text-md text-cyber-pink font-bold">{Math.round(totalF / daysWithLogs)}g</span>
                                     </div>
