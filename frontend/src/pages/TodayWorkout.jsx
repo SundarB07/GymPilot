@@ -488,7 +488,7 @@ export default function TodayWorkout() {
                                             <label className="text-[10px] text-gray-500 uppercase tracking-widest pl-1 mb-1 block">Sets</label>
                                             <input
                                                 type="number"
-                                                value={logs[ex.id]?.sets || ''}
+                                                value={logs[ex.id]?.sets !== undefined && logs[ex.id]?.sets !== null ? logs[ex.id]?.sets : (ex.sets || '')}
                                                 onChange={(e) => handleLogChange(ex.id, 'sets', e.target.value)}
                                                 className="w-full bg-[#050508] border border-gray-700 rounded p-2 text-white focus:outline-none focus:border-cyber-blue text-sm transition-colors text-center font-orbitron"
                                             />
@@ -498,7 +498,7 @@ export default function TodayWorkout() {
                                             <input
                                                 type="text"
                                                 disabled={logs[ex.id]?.useDiffWeights}
-                                                value={logs[ex.id]?.reps || ''}
+                                                value={logs[ex.id]?.reps !== undefined && logs[ex.id]?.reps !== null ? logs[ex.id]?.reps : (ex.reps?.split('-')[0] || ex.reps || '')}
                                                 onChange={(e) => handleLogChange(ex.id, 'reps', e.target.value)}
                                                 className="w-full bg-[#050508] border border-gray-700 rounded p-2 text-white focus:outline-none focus:border-cyber-blue text-sm transition-colors text-center font-orbitron disabled:opacity-50"
                                             />
