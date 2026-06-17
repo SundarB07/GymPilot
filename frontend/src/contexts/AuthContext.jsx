@@ -7,6 +7,7 @@ export const useAuth = () => useContext(AuthContext)
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null)
+    const [profile, setProfile] = useState(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
@@ -24,6 +25,30 @@ export const AuthProvider = ({ children }) => {
 
         return () => subscription.unsubscribe()
     }, [])
+
+    useEffect(() => {
+        if (!user) {
+            setProfile(null)
+            return
+        }
+        async function fetchProfile() {
+            try {
+                const { data, error } = await supabase
+                    .from('profiles')
+                    .select('*')
+                    .eq('id', user.id)
+                    .single()
+                if (!error && data) {
+                    setProfile(data)
+                }
+            } catch (err) {
+                console.error('Error fetching profile:', err)
+            }
+        }
+        fetchProfile()
+    }, [user])
+
+    const displayName = user?.user_metadata?.display_name || profile?.username || user?.user_metadata?.username || user?.email || ''
 
     const signUp = async (email, password, username) => {
         // Supabase auth stores user data
@@ -73,6 +98,8 @@ export const AuthProvider = ({ children }) => {
         signIn,
         signOut,
         user,
+        profile,
+        displayName,
         loading,
         dietPlan,
         setDietPlan,

@@ -3,7 +3,7 @@ import { Home, ClipboardList, Dumbbell, Apple, LogOut, Sparkles } from 'lucide-r
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Layout() {
-    const { signOut, user } = useAuth();
+    const { signOut, user, displayName } = useAuth();
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row bg-cyber-bg text-gray-300">
@@ -45,7 +45,7 @@ export default function Layout() {
                 <div className="space-y-4 pt-4 border-t border-cyber-blue/10">
                     <div className="px-2 truncate">
                         <span className="text-[10px] text-gray-500 block uppercase tracking-wider font-orbitron">Pilot Profile</span>
-                        <span className="text-xs text-gray-300 truncate font-semibold block">{user?.email}</span>
+                        <span className="text-xs text-gray-300 truncate font-semibold block">{displayName}</span>
                     </div>
                     <button onClick={signOut} className="flex items-center justify-center space-x-2 w-full font-orbitron text-xs font-bold py-2 px-4 rounded border border-red-500/30 text-red-400 hover:bg-red-500/10 active:scale-95 transition-all duration-300">
                         <LogOut size={14} />
@@ -68,7 +68,7 @@ export default function Layout() {
                             {({ isActive }) => (
                                 <>
                                     <Home size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`text-[9px] uppercase font-orbitron mt-1 tracking-wider ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Dashboard</span>
+                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Dashboard</span>
                                 </>
                             )}
                         </NavLink>
@@ -76,7 +76,7 @@ export default function Layout() {
                             {({ isActive }) => (
                                 <>
                                     <ClipboardList size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`text-[9px] uppercase font-orbitron mt-1 tracking-wider ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Workout Plan</span>
+                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Workout Plan</span>
                                 </>
                             )}
                         </NavLink>
@@ -84,7 +84,7 @@ export default function Layout() {
                             {({ isActive }) => (
                                 <>
                                     <Dumbbell size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`text-[9px] uppercase font-orbitron mt-1 tracking-wider ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Workout</span>
+                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Workout</span>
                                 </>
                             )}
                         </NavLink>
@@ -92,7 +92,7 @@ export default function Layout() {
                             {({ isActive }) => (
                                 <>
                                     <Sparkles size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`text-[9px] uppercase font-orbitron mt-1 tracking-wider ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Diet Plan</span>
+                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Diet Plan</span>
                                 </>
                             )}
                         </NavLink>
@@ -100,7 +100,7 @@ export default function Layout() {
                             {({ isActive }) => (
                                 <>
                                     <Apple size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`text-[9px] uppercase font-orbitron mt-1 tracking-wider ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Diet Log</span>
+                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Diet Log</span>
                                 </>
                             )}
                         </NavLink>

@@ -43,6 +43,8 @@ CREATE TABLE workout_logs (
     sets_completed INTEGER,
     actual_reps INTEGER,
     notes TEXT,
+    workout_volume numeric,
+    set_logs jsonb,
     created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
