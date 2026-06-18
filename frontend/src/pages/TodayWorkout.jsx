@@ -14,6 +14,8 @@ export default function TodayWorkout() {
     const [completed, setCompleted] = useState(false);
     const [existingLogs, setExistingLogs] = useState([]);
     const [justSubmitted, setJustSubmitted] = useState(false);
+    const [exercisePRs, setExercisePRs] = useState({});
+    const [achievedPRs, setAchievedPRs] = useState([]);
 
     useEffect(() => {
         async function fetchTodayPlan() {
@@ -53,6 +55,35 @@ export default function TodayWorkout() {
                             };
                         });
                         setLogs(initialLogs);
+
+                        // Fetch exercise history to compute current PRs
+                        const exerciseIds = today.exercises.map(ex => ex.id);
+                        const { data: historyData, error: historyError } = await supabase
+                            .from('workout_logs')
+                            .select('*')
+                            .eq('user_id', user.id)
+                            .in('exercise_id', exerciseIds);
+
+                        if (!historyError && historyData) {
+                            const prMap = {};
+                            today.exercises.forEach(ex => {
+                                const exLogs = historyData.filter(l => l.exercise_id === ex.id);
+                                let maxW = 0;
+                                exLogs.forEach(log => {
+                                    if (log.set_logs && Array.isArray(log.set_logs)) {
+                                        log.set_logs.forEach(set => {
+                                            const w = parseFloat(set.weight) || 0;
+                                            if (w > maxW) maxW = w;
+                                        });
+                                    } else {
+                                        const w = parseFloat(log.weight_used) || 0;
+                                        if (w > maxW) maxW = w;
+                                    }
+                                });
+                                prMap[ex.id] = maxW;
+                            });
+                            setExercisePRs(prMap);
+                        }
 
                         // Check if today's workout has already been completed in DB
                         const todayStr = new Date().toISOString().split('T')[0];
@@ -256,6 +287,107 @@ export default function TodayWorkout() {
                 };
             });
 
+            // Fetch previous logs for these exercises to detect PRs
+            const exerciseIds = todayPlan.exercises.map(ex => ex.id);
+            const { data: prevLogs, error: prevError } = await supabase
+                .from('workout_logs')
+                .select('*')
+                .eq('user_id', user.id)
+                .in('exercise_id', exerciseIds)
+                .neq('workout_date', todayStr);
+
+            const newPRs = [];
+            if (!prevError && prevLogs) {
+                todayPlan.exercises.forEach(ex => {
+                    const exLogs = prevLogs.filter(l => l.exercise_id === ex.id);
+                    let prevBestWeight = 0;
+                    let prevBestVolume = 0;
+                    let prevBestReps = 0;
+
+                    exLogs.forEach(log => {
+                        if (log.set_logs && Array.isArray(log.set_logs)) {
+                            log.set_logs.forEach(set => {
+                                const w = parseFloat(set.weight) || 0;
+                                const r = parseInt(set.reps, 10) || 0;
+                                const vol = w * r;
+                                if (w > prevBestWeight) prevBestWeight = w;
+                                if (r > prevBestReps) prevBestReps = r;
+                                if (vol > prevBestVolume) prevBestVolume = vol;
+                            });
+                        } else {
+                            const w = parseFloat(log.weight_used) || 0;
+                            const r = parseInt(log.actual_reps, 10) || 0;
+                            const vol = w * r;
+                            if (w > prevBestWeight) prevBestWeight = w;
+                            if (r > prevBestReps) prevBestReps = r;
+                            if (vol > prevBestVolume) prevBestVolume = vol;
+                        }
+                    });
+
+                    // Compare against current log entries
+                    const currentEntry = logEntries.find(l => l.exercise_id === ex.id);
+                    const hasWeight = currentEntry && (
+                        (currentEntry.weight_used !== null && parseFloat(currentEntry.weight_used) > 0) ||
+                        (currentEntry.set_logs && currentEntry.set_logs.some(s => parseFloat(s.weight) > 0))
+                    );
+
+                    if (currentEntry && hasWeight) {
+                        if (currentEntry.set_logs && Array.isArray(currentEntry.set_logs)) {
+                            let beatWeight = false;
+                            let beatVolume = false;
+                            let beatReps = false;
+                            let highestW = prevBestWeight;
+                            let highestV = prevBestVolume;
+                            let highestR = prevBestReps;
+
+                            currentEntry.set_logs.forEach(s => {
+                                const curW = parseFloat(s.weight) || 0;
+                                const curR = parseInt(s.reps, 10) || 0;
+                                const curVol = curW * curR;
+
+                                if (curW > highestW) {
+                                    beatWeight = true;
+                                    highestW = curW;
+                                }
+                                if (curR > highestR) {
+                                    beatReps = true;
+                                    highestR = curR;
+                                }
+                                if (curVol > highestV) {
+                                    beatVolume = true;
+                                    highestV = curVol;
+                                }
+                            });
+
+                            if (beatWeight) {
+                                newPRs.push({ exerciseName: ex.name, type: 'Weight', previous: prevBestWeight, current: `${highestW}kg` });
+                            }
+                            if (beatReps) {
+                                newPRs.push({ exerciseName: ex.name, type: 'Reps', previous: prevBestReps, current: `${highestR} Reps` });
+                            }
+                            if (beatVolume) {
+                                newPRs.push({ exerciseName: ex.name, type: 'Volume', previous: prevBestVolume, current: `${highestV} Vol` });
+                            }
+                        } else {
+                            const curW = parseFloat(currentEntry.weight_used) || 0;
+                            const curR = parseInt(currentEntry.actual_reps, 10) || 0;
+                            const curVol = curW * curR;
+
+                            if (curW > prevBestWeight) {
+                                newPRs.push({ exerciseName: ex.name, type: 'Weight', previous: prevBestWeight, current: `${curW}kg` });
+                            }
+                            if (curR > prevBestReps) {
+                                newPRs.push({ exerciseName: ex.name, type: 'Reps', previous: prevBestReps, current: `${curR} Reps` });
+                            }
+                            if (curVol > prevBestVolume) {
+                                newPRs.push({ exerciseName: ex.name, type: 'Volume', previous: prevBestVolume, current: `${curVol} Vol` });
+                            }
+                        }
+                    }
+                });
+            }
+            setAchievedPRs(newPRs);
+
             // 1. Delete any existing workout logs for today to prevent duplicates
             const { error: deleteError } = await supabase
                 .from('workout_logs')
@@ -314,6 +446,29 @@ export default function TodayWorkout() {
                         <h2 className="text-3xl font-orbitron font-bold neon-text mb-2">Protocol Cleared!</h2>
                         <p className="text-gray-300 text-sm">Workout successfully logged. Excellent work.</p>
                     </div>
+
+                    {achievedPRs && achievedPRs.length > 0 && (
+                        <div className="mt-4 p-4 border border-cyber-pink/30 bg-[#0f0f15] rounded-lg text-left space-y-3">
+                            <h3 className="text-sm font-orbitron text-cyber-pink flex items-center gap-2">
+                                <span>🏆</span>
+                                <span>NEW PERSONAL RECORDS!</span>
+                            </h3>
+                            <div className="space-y-2 text-xs">
+                                {achievedPRs.map((pr, index) => (
+                                    <div key={index} className="border-b border-gray-800/60 pb-2 last:border-0 last:pb-0 flex justify-between items-center">
+                                        <div className="flex flex-col">
+                                            <span className="font-orbitron font-semibold text-white">{pr.exerciseName}</span>
+                                            <span className="text-[10px] text-gray-500">{pr.type} PR</span>
+                                        </div>
+                                        <div className="text-right font-orbitron text-cyber-cyan">
+                                            {pr.previous > 0 ? `${pr.previous} → ` : ''}<span className="text-white font-bold">{pr.current}</span>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
+
                     <div className="pt-4">
                         <Link to="/" className="cyber-button w-full py-3">
                             Return to Dashboard
@@ -461,7 +616,14 @@ export default function TodayWorkout() {
                                 <div className="flex justify-between items-start mb-4 border-b border-gray-800 pb-3">
                                     <div>
                                         <h3 className="font-orbitron font-semibold text-white tracking-wide">{ex.name}</h3>
-                                        <p className="text-[10px] text-gray-400 uppercase tracking-wider">{ex.muscle_group}</p>
+                                        <div className="flex items-center space-x-3 mt-1 text-[10px]">
+                                            <span className="text-gray-400 uppercase tracking-wider">{ex.muscle_group}</span>
+                                            {exercisePRs[ex.id] !== undefined && exercisePRs[ex.id] > 0 && (
+                                                <span className="text-cyber-pink font-semibold uppercase tracking-wider">
+                                                    🏆 Current PR: {exercisePRs[ex.id]}kg
+                                                </span>
+                                            )}
+                                        </div>
                                     </div>
                                     <div className="text-right">
                                         <span className="text-xs text-cyber-cyan block mb-1 uppercase tracking-widest font-semibold">Target</span>
