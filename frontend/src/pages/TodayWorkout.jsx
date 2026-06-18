@@ -454,17 +454,25 @@ export default function TodayWorkout() {
                                 <span>NEW PERSONAL RECORDS!</span>
                             </h3>
                             <div className="space-y-2 text-xs">
-                                {achievedPRs.map((pr, index) => (
-                                    <div key={index} className="border-b border-gray-800/60 pb-2 last:border-0 last:pb-0 flex justify-between items-center">
-                                        <div className="flex flex-col">
-                                            <span className="font-orbitron font-semibold text-white">{pr.exerciseName}</span>
-                                            <span className="text-[10px] text-gray-500">{pr.type} PR</span>
+                                {Object.entries(
+                                    achievedPRs.reduce((acc, pr) => {
+                                        if (!acc[pr.exerciseName]) {
+                                            acc[pr.exerciseName] = [];
+                                        }
+                                        acc[pr.exerciseName].push(pr);
+                                        return acc;
+                                    }, {})
+                                ).map(([exerciseName, prList], index) => {
+                                    const prLine = prList.map(pr => `${pr.type} PR: ${pr.current}`).join(' / ');
+                                    return (
+                                        <div key={index} className="border-b border-gray-800/60 pb-2 last:border-0 last:pb-0 flex flex-col py-1">
+                                            <span className="font-orbitron font-semibold text-white">{exerciseName}</span>
+                                            <span className="text-[10px] text-cyber-cyan font-orbitron mt-0.5">
+                                                {prLine}
+                                            </span>
                                         </div>
-                                        <div className="text-right font-orbitron text-cyber-cyan">
-                                            {pr.previous > 0 ? `${pr.previous} → ` : ''}<span className="text-white font-bold">{pr.current}</span>
-                                        </div>
-                                    </div>
-                                ))}
+                                    );
+                                })}
                             </div>
                         </div>
                     )}
