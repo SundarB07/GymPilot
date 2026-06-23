@@ -369,6 +369,55 @@ export default function DietLog() {
     const totalFiber = logs.reduce((sum, log) => sum + Number(log.fiber || 0), 0);
     const totalCreatine = logs.reduce((sum, log) => sum + (log.creatine_taken ? Number(log.creatine_grams || 0) : 0), 0);
 
+    // Missing Macro Deficit Calculations
+    const targetCalories = activePlan ? Number(activePlan.target_calories || 0) : 0;
+    const targetProtein = activePlan?.plan_data?.macros?.protein ? Number(activePlan.plan_data.macros.protein) : 0;
+    const targetCarbs = activePlan?.plan_data?.macros?.carbs ? Number(activePlan.plan_data.macros.carbs) : 0;
+    const targetFat = activePlan?.plan_data?.macros?.fat ? Number(activePlan.plan_data.macros.fat) : 0;
+    const targetFiber = activePlan?.plan_data?.macros?.fiber ? Number(activePlan.plan_data.macros.fiber) : 0;
+
+    const calDeficit = Math.max(0, targetCalories - totalCalories);
+    const proteinDeficit = Math.max(0, targetProtein - totalProtein);
+    const carbsDeficit = Math.max(0, targetCarbs - totalCarbs);
+    const fatDeficit = Math.max(0, targetFat - totalFat);
+    const fiberDeficit = Math.max(0, targetFiber - totalFiber);
+
+    const getSuggestionsForMacro = (macroKey) => {
+        if (!dbFoods || dbFoods.length === 0) return [];
+        let keywords = [];
+        let valueField = '';
+        if (macroKey === 'protein') {
+            keywords = ['chicken', 'egg', 'paneer', 'whey', 'soy', 'soya'];
+            valueField = 'protein_g';
+        } else if (macroKey === 'carbs') {
+            keywords = ['rice', 'oats', 'banana', 'chapati', 'roti'];
+            valueField = 'carbs_g';
+        } else if (macroKey === 'fat') {
+            keywords = ['nuts', 'peanut butter', 'seed', 'almond', 'walnut', 'oil', 'butter', 'avocado'];
+            valueField = 'fat_g';
+        } else if (macroKey === 'fiber') {
+            keywords = ['oats', 'fruit', 'vegetable', 'legume', 'apple', 'banana', 'chia', 'spinach', 'broccoli', 'lentil', 'bean'];
+            valueField = 'fiber_g';
+        } else {
+            return [];
+        }
+
+        const scoredFoods = dbFoods
+            .map(food => {
+                const nameLower = (food.food_name || '').toLowerCase();
+                let score = Number(food[valueField] || 0);
+                const matchedKeyword = keywords.find(kw => nameLower.includes(kw));
+                if (matchedKeyword) {
+                    score += 100;
+                }
+                return { food, score, value: Number(food[valueField] || 0) };
+            })
+            .filter(item => item.value > 0)
+            .sort((a, b) => b.score - a.score);
+
+        return scoredFoods.slice(0, 3).map(item => item.food.food_name);
+    };
+
     // Group logs for analytics
     const getGroupedData = () => {
         const days = analyticsRange === 'weekly' ? 7 : 30;
@@ -537,6 +586,55 @@ export default function DietLog() {
 
             {activeTab === 'logs' ? (
                 <>
+                    {/* Missing Macro Alerts */}
+                    {activePlan && (
+                        <div className="cyber-card p-4 space-y-3 border border-gray-800 bg-[#09090f]/60 relative overflow-hidden">
+                            <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/5 blur-2xl rounded-full"></div>
+                            <h2 className="font-orbitron text-xs text-gray-400 uppercase tracking-widest relative z-10">Nutrition Completion Status</h2>
+                            {logs.length === 0 ? (
+                                <div className="text-xs text-amber-400 font-semibold font-orbitron tracking-wider bg-amber-500/5 border border-amber-500/20 p-2.5 rounded relative z-10">
+                                    No meals logged today. Log meals to track macro completion.
+                                </div>
+                            ) : (calDeficit === 0 && proteinDeficit === 0 && carbsDeficit === 0 && fatDeficit === 0 && fiberDeficit === 0) ? (
+                                <div className="text-xs text-emerald-400 font-semibold font-orbitron tracking-wider bg-emerald-500/5 border border-emerald-500/20 p-2.5 rounded relative z-10">
+                                    All macro targets completed for today ✅
+                                </div>
+                            ) : (
+                                <div className="space-y-2 relative z-10">
+                                    {calDeficit > 0 && (
+                                        <div className="text-xs text-amber-400 font-orbitron flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-amber-500/5 border border-amber-500/10 p-2 rounded">
+                                            <span>Need <span className="font-bold text-white">{Math.round(calDeficit)}</span> kcal more Calories</span>
+                                        </div>
+                                    )}
+                                    {proteinDeficit > 0 && (
+                                        <div className="text-xs text-amber-400 font-orbitron flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-amber-500/5 border border-amber-500/10 p-2 rounded">
+                                            <span>Need <span className="font-bold text-white">{Math.round(proteinDeficit)}g</span> more Protein</span>
+                                            <span className="text-[10px] text-gray-400 italic">Try: {getSuggestionsForMacro('protein').join(', ') || 'High-protein foods'}</span>
+                                        </div>
+                                    )}
+                                    {carbsDeficit > 0 && (
+                                        <div className="text-xs text-amber-400 font-orbitron flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-amber-500/5 border border-amber-500/10 p-2 rounded">
+                                            <span>Need <span className="font-bold text-white">{Math.round(carbsDeficit)}g</span> more Carbs</span>
+                                            <span className="text-[10px] text-gray-400 italic">Try: {getSuggestionsForMacro('carbs').join(', ') || 'High-carb foods'}</span>
+                                        </div>
+                                    )}
+                                    {fatDeficit > 0 && (
+                                        <div className="text-xs text-amber-400 font-orbitron flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-amber-500/5 border border-amber-500/10 p-2 rounded">
+                                            <span>Need <span className="font-bold text-white">{Math.round(fatDeficit)}g</span> more Fat</span>
+                                            <span className="text-[10px] text-gray-400 italic">Try: {getSuggestionsForMacro('fat').join(', ') || 'Healthy fat foods'}</span>
+                                        </div>
+                                    )}
+                                    {fiberDeficit > 0 && (
+                                        <div className="text-xs text-amber-400 font-orbitron flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 bg-amber-500/5 border border-amber-500/10 p-2 rounded">
+                                            <span>Need <span className="font-bold text-white">{Math.round(fiberDeficit)}g</span> more Fiber</span>
+                                            <span className="text-[10px] text-gray-400 italic">Try: {getSuggestionsForMacro('fiber').join(', ') || 'Fiber-rich foods'}</span>
+                                        </div>
+                                    )}
+                                </div>
+                            )}
+                        </div>
+                    )}
+
                     {/* Log Fuel Form */}
                     <form onSubmit={handleSubmit} className="cyber-card space-y-4 relative overflow-hidden">
                         <div className="absolute top-0 right-0 w-16 h-16 bg-purple-500/10 blur-2xl rounded-full"></div>

@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, ClipboardList, Dumbbell, Apple, LogOut, Sparkles, Trophy } from 'lucide-react';
+import { Home, ClipboardList, Dumbbell, Apple, LogOut, Sparkles, Trophy, Scale, TrendingUp } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Layout() {
@@ -41,6 +41,14 @@ export default function Layout() {
                         <NavLink to="/records" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
                             <Trophy size={18} />
                             <span>Personal Records</span>
+                        </NavLink>
+                        <NavLink to="/weight" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
+                            <Scale size={18} />
+                            <span>Body Weight</span>
+                        </NavLink>
+                        <NavLink to="/weekly-progress" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
+                            <TrendingUp size={18} />
+                            <span>Weekly Progress</span>
                         </NavLink>
                     </nav>
                 </div>
@@ -113,6 +121,22 @@ export default function Layout() {
                                 <>
                                     <Trophy size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
                                     <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Records</span>
+                                </>
+                            )}
+                        </NavLink>
+                        <NavLink to="/weight" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
+                            {({ isActive }) => (
+                                <>
+                                    <Scale size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
+                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Weight</span>
+                                </>
+                            )}
+                        </NavLink>
+                        <NavLink to="/weekly-progress" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
+                            {({ isActive }) => (
+                                <>
+                                    <TrendingUp size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
+                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Weekly</span>
                                 </>
                             )}
                         </NavLink>

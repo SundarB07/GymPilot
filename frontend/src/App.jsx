@@ -12,6 +12,8 @@ import DietLog from './pages/DietLog';
 import GenerateDietPlan from './pages/GenerateDietPlan';
 import MyDietPlan from './pages/MyDietPlan';
 import PRHistory from './pages/PRHistory';
+import WeightTracker from './pages/WeightTracker';
+import WeeklyProgress from './pages/WeeklyProgress';
 
 function App() {
   return (
@@ -31,6 +33,8 @@ function App() {
             <Route path="/generate-diet" element={<GenerateDietPlan />} />
             <Route path="/diet" element={<DietLog />} />
             <Route path="/records" element={<PRHistory />} />
+            <Route path="/weight" element={<WeightTracker />} />
+            <Route path="/weekly-progress" element={<WeeklyProgress />} />
           </Route>
         </Routes>
       </AuthProvider>

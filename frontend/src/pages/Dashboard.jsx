@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Activity, CalendarPlus, ClipboardList, Utensils, Sparkles, Trophy } from 'lucide-react';
+import { Activity, CalendarPlus, ClipboardList, Utensils, Sparkles, Trophy, Scale } from 'lucide-react';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -14,6 +14,8 @@ export default function Dashboard() {
     const [totalPRs, setTotalPRs] = useState(0);
     const [latestPR, setLatestPR] = useState(null);
     const [todayProgressions, setTodayProgressions] = useState([]);
+    const [currentWeight, setCurrentWeight] = useState(null);
+    const [weeklyWeightChange, setWeeklyWeightChange] = useState(null);
 
     useEffect(() => {
         async function fetchPlanAndStreak() {
@@ -207,6 +209,40 @@ export default function Dashboard() {
                             setTodayProgressions(progSummary);
                         }
                     }
+
+                    // 4. Fetch Weight Logs and calculate current weight & weekly change
+                    const { data: weightData, error: weightError } = await supabase
+                        .from('weight_logs')
+                        .select('*')
+                        .eq('user_id', user.id)
+                        .order('log_date', { ascending: true });
+
+                    if (!weightError && weightData && weightData.length > 0) {
+                        const latest = weightData[weightData.length - 1];
+                        setCurrentWeight(parseFloat(latest.weight));
+
+                        if (weightData.length > 1) {
+                            const latestDate = new Date(latest.log_date);
+                            const targetDate = new Date(latestDate);
+                            targetDate.setDate(targetDate.getDate() - 7);
+
+                            let closestEntry = weightData[0];
+                            let minDiff = Math.abs(new Date(closestEntry.log_date) - targetDate);
+
+                            weightData.forEach(entry => {
+                                const diff = Math.abs(new Date(entry.log_date) - targetDate);
+                                if (diff < minDiff) {
+                                    minDiff = diff;
+                                    closestEntry = entry;
+                                }
+                            });
+
+                            if (closestEntry.id !== latest.id) {
+                                const change = parseFloat(latest.weight) - parseFloat(closestEntry.weight);
+                                setWeeklyWeightChange(change);
+                            }
+                        }
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching dashboard plan and streak:', err);
@@ -250,6 +286,7 @@ export default function Dashboard() {
 
     const todaySchedule = getTodaySchedule();
 
+    // Weekly Progress Dashboard Calculations
     return (
         <div className="space-y-6">
             <div className="flex justify-between items-center mb-8">
@@ -400,6 +437,38 @@ export default function Dashboard() {
                                 <div>
                                     <span className="text-[10px] text-gray-500 font-orbitron uppercase tracking-widest block">Latest PR</span>
                                     <span className="text-xs text-gray-500 italic block mt-1">None yet</span>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                </Link>
+
+                <Link to="/weight" className="cyber-card p-4 border border-cyber-blue/20 flex flex-col justify-between hover:border-cyber-blue/40 transition-all cursor-pointer">
+                    <div>
+                        <h3 className="font-orbitron text-cyber-blue mb-4 flex items-center space-x-2">
+                            <Scale className="text-cyber-blue w-5 h-5 drop-shadow-[0_0_5px_rgba(0,204,255,0.4)]" />
+                            <span>Body Weight</span>
+                        </h3>
+                        <div className="space-y-4">
+                            {currentWeight !== null ? (
+                                <>
+                                    <div>
+                                        <span className="text-[10px] text-gray-500 font-orbitron uppercase tracking-widest block">Current Weight</span>
+                                        <span className="text-3xl font-extrabold font-orbitron text-white drop-shadow-[0_0_10px_rgba(0,245,255,0.4)]">
+                                            {currentWeight} <span className="text-sm font-normal text-gray-400">kg</span>
+                                        </span>
+                                    </div>
+                                    <div>
+                                        <span className="text-[10px] text-gray-500 font-orbitron uppercase tracking-widest block">Weekly Change</span>
+                                        <span className={`text-xs font-bold font-orbitron ${weeklyWeightChange > 0 ? 'text-rose-500' : weeklyWeightChange < 0 ? 'text-emerald-400' : 'text-gray-400'}`}>
+                                            {weeklyWeightChange !== null ? (weeklyWeightChange >= 0 ? `+${weeklyWeightChange.toFixed(1)}` : `${weeklyWeightChange.toFixed(1)}`) : '0.0'} kg
+                                        </span>
+                                    </div>
+                                </>
+                            ) : (
+                                <div>
+                                    <span className="text-xs text-gray-500 italic block mt-1">No weight history yet</span>
+                                    <span className="text-[9px] text-cyber-blue font-orbitron uppercase tracking-widest font-bold mt-2 block">Log Weight →</span>
                                 </div>
                             )}
                         </div>

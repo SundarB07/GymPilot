@@ -97,6 +97,24 @@ CREATE POLICY "Users can view their own diet logs" ON dietlogs FOR SELECT USING 
 CREATE POLICY "Users can update their own diet logs" ON dietlogs FOR UPDATE USING (auth.uid() = user_id);
 CREATE POLICY "Users can delete their own diet logs" ON dietlogs FOR DELETE USING (auth.uid() = user_id);
 
+-- 4. Create weight_logs table
+CREATE TABLE IF NOT EXISTS weight_logs (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    weight numeric NOT NULL,
+    log_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL,
+    UNIQUE (user_id, log_date)
+);
+
+-- Enable RLS for weight_logs
+ALTER TABLE weight_logs ENABLE ROW LEVEL SECURITY;
+
+-- Weight Logs: Users can CRUD their own logs
+CREATE POLICY "Users can insert their own weight logs" ON weight_logs FOR INSERT WITH CHECK (auth.uid() = user_id);
+CREATE POLICY "Users can view their own weight logs" ON weight_logs FOR SELECT USING (auth.uid() = user_id);
+CREATE POLICY "Users can update their own weight logs" ON weight_logs FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Users can delete their own weight logs" ON weight_logs FOR DELETE USING (auth.uid() = user_id);
 
 
 -- Note: Ensure you set up a trigger for auth.users to automatically create a profile if desired, 
