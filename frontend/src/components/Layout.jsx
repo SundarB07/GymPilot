@@ -1,5 +1,5 @@
 import { Outlet, NavLink } from 'react-router-dom';
-import { Home, ClipboardList, Dumbbell, Apple, LogOut, Sparkles } from 'lucide-react';
+import { Home, ClipboardList, Dumbbell, Apple, LogOut, Sparkles, Trophy } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Layout() {
@@ -18,25 +18,29 @@ export default function Layout() {
 
                     {/* Navigation Links */}
                     <nav className="flex flex-col space-y-2">
-                        <NavLink to="/" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.1)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
+                        <NavLink to="/" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
                             <Home size={18} />
                             <span>Dashboard</span>
                         </NavLink>
-                        <NavLink to="/plan" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.1)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
+                        <NavLink to="/plan" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
                             <ClipboardList size={18} />
                             <span>Workout Plan</span>
                         </NavLink>
-                        <NavLink to="/workout" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.1)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
+                        <NavLink to="/workout" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
                             <Dumbbell size={18} />
                             <span>Workout</span>
                         </NavLink>
-                        <NavLink to="/diet-plan" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.1)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
+                        <NavLink to="/diet-plan" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
                             <Sparkles size={18} />
                             <span>Diet Plan</span>
                         </NavLink>
-                        <NavLink to="/diet" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.1)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
+                        <NavLink to="/diet" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
                             <Apple size={18} />
                             <span>Diet Log</span>
+                        </NavLink>
+                        <NavLink to="/records" className={({ isActive }) => `flex items-center space-x-4 px-4 py-3 rounded-lg font-orbitron text-sm font-semibold tracking-wide transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-l-2 border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'text-gray-400 hover:bg-cyber-blue/5 hover:text-white'}`}>
+                            <Trophy size={18} />
+                            <span>Personal Records</span>
                         </NavLink>
                     </nav>
                 </div>
@@ -101,6 +105,14 @@ export default function Layout() {
                                 <>
                                     <Apple size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
                                     <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Diet Log</span>
+                                </>
+                            )}
+                        </NavLink>
+                        <NavLink to="/records" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
+                            {({ isActive }) => (
+                                <>
+                                    <Trophy size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
+                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Records</span>
                                 </>
                             )}
                         </NavLink>
