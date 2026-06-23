@@ -13,6 +13,7 @@ export default function Dashboard() {
     const [bestStreak, setBestStreak] = useState(0);
     const [totalPRs, setTotalPRs] = useState(0);
     const [latestPR, setLatestPR] = useState(null);
+    const [todayProgressions, setTodayProgressions] = useState([]);
 
     useEffect(() => {
         async function fetchPlanAndStreak() {
@@ -153,6 +154,59 @@ export default function Dashboard() {
                             setLatestPR(prList[0]);
                         }
                     }
+
+                    // Calculate progression suggestions for today's schedule exercises
+                    if (planData && planData.plan_data && planData.plan_data.weekly_schedule) {
+                        const jsDayIndex = new Date().getDay();
+                        const mappedIndex = (jsDayIndex + 6) % 7;
+                        const todaySched = planData.plan_data.weekly_schedule.find(d => d.day_index === mappedIndex);
+                        if (todaySched && !todaySched.is_rest && todaySched.exercises) {
+                            const todayStr = new Date().toISOString().split('T')[0];
+                            const progSummary = [];
+
+                            todaySched.exercises.forEach(ex => {
+                                const allExLogs = logsData.filter(l => l.exercise_id === ex.id);
+                                const exLogs = allExLogs.filter(l => l.workout_date !== todayStr);
+                                exLogs.sort((a, b) => {
+                                    const dateDiff = new Date(b.workout_date) - new Date(a.workout_date);
+                                    if (dateDiff !== 0) return dateDiff;
+                                    return new Date(b.created_at) - new Date(a.created_at);
+                                });
+
+                                if (exLogs.length > 0) {
+                                    const lastLog = exLogs[0];
+                                    const minReps = parseInt(lastLog.target_reps_min, 10) || 0;
+                                    const maxReps = parseInt(lastLog.target_reps_max, 10) || 0;
+                                    const setsPlanned = parseInt(lastLog.sets_planned, 10) || 0;
+
+                                    let setsCompleted = 0;
+                                    let reachedMinReps = false;
+
+                                    if (lastLog.set_logs && Array.isArray(lastLog.set_logs) && lastLog.set_logs.length > 0) {
+                                        setsCompleted = lastLog.set_logs.length;
+                                        reachedMinReps = lastLog.set_logs.every(s => (parseInt(s.reps, 10) || 0) >= minReps);
+                                    } else {
+                                        setsCompleted = parseInt(lastLog.sets_completed, 10) || 0;
+                                        reachedMinReps = (parseInt(lastLog.actual_reps, 10) || 0) >= minReps;
+                                    }
+
+                                    const completedPlannedSets = setsCompleted >= setsPlanned;
+                                    const success = completedPlannedSets && reachedMinReps;
+
+                                    progSummary.push({
+                                        name: ex.name,
+                                        status: success ? 'Ready' : 'Maintain'
+                                    });
+                                } else {
+                                    progSummary.push({
+                                        name: ex.name,
+                                        status: 'New'
+                                    });
+                                }
+                            });
+                            setTodayProgressions(progSummary);
+                        }
+                    }
                 }
             } catch (err) {
                 console.error('Error fetching dashboard plan and streak:', err);
@@ -271,12 +325,23 @@ export default function Dashboard() {
                                 <div>
                                     <span className="text-[9px] text-gray-500 font-orbitron uppercase tracking-widest block mb-2">Today's Telemetry Protocol</span>
                                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                                        {todaySchedule.exercises.map((ex, idx) => (
-                                            <div key={idx} className="flex justify-between items-center bg-[#09090f] border border-gray-800/60 p-2.5 rounded">
-                                                <span className="text-gray-300 font-semibold truncate max-w-[150px]">{ex.name}</span>
-                                                <span className="text-cyber-cyan font-orbitron">{ex.sets}x{ex.reps}</span>
-                                            </div>
-                                        ))}
+                                        {todaySchedule.exercises.map((ex, idx) => {
+                                            const prog = todayProgressions.find(p => p.name === ex.name);
+                                            return (
+                                                <div key={idx} className="flex justify-between items-center bg-[#09090f] border border-gray-800/60 p-2.5 rounded">
+                                                    <div className="flex flex-col truncate pr-2 max-w-[70%]">
+                                                        <span className="text-gray-300 font-semibold truncate" title={ex.name}>{ex.name}</span>
+                                                        {prog && prog.status === 'Ready' && (
+                                                            <span className="text-[8px] text-cyber-cyan font-orbitron uppercase tracking-widest font-bold mt-0.5">Ready to Progress 🔥</span>
+                                                        )}
+                                                        {prog && prog.status === 'Maintain' && (
+                                                            <span className="text-[8px] text-gray-500 font-orbitron uppercase tracking-widest font-bold mt-0.5">Maintain Weight</span>
+                                                        )}
+                                                    </div>
+                                                    <span className="text-cyber-cyan font-orbitron flex-shrink-0">{ex.sets}x{ex.reps}</span>
+                                                </div>
+                                            );
+                                        })}
                                     </div>
                                 </div>
                             )}

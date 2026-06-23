@@ -16,6 +16,7 @@ export default function TodayWorkout() {
     const [justSubmitted, setJustSubmitted] = useState(false);
     const [exercisePRs, setExercisePRs] = useState({});
     const [achievedPRs, setAchievedPRs] = useState([]);
+    const [progressionSuggestions, setProgressionSuggestions] = useState({});
 
     useEffect(() => {
         async function fetchTodayPlan() {
@@ -66,10 +67,15 @@ export default function TodayWorkout() {
 
                         if (!historyError && historyData) {
                             const prMap = {};
+                            const progressionMap = {};
+                            const todayStr = new Date().toISOString().split('T')[0];
+
                             today.exercises.forEach(ex => {
-                                const exLogs = historyData.filter(l => l.exercise_id === ex.id);
+                                const allExLogs = historyData.filter(l => l.exercise_id === ex.id);
+                                
+                                // 1. Calculate PRs
                                 let maxW = 0;
-                                exLogs.forEach(log => {
+                                allExLogs.forEach(log => {
                                     if (log.set_logs && Array.isArray(log.set_logs)) {
                                         log.set_logs.forEach(set => {
                                             const w = parseFloat(set.weight) || 0;
@@ -81,8 +87,67 @@ export default function TodayWorkout() {
                                     }
                                 });
                                 prMap[ex.id] = maxW;
+
+                                // 2. Calculate progressive overload suggestions (excluding today's logs)
+                                const exLogs = allExLogs.filter(l => l.workout_date !== todayStr);
+                                
+                                // Sort by workout_date desc, created_at desc
+                                exLogs.sort((a, b) => {
+                                    const dateDiff = new Date(b.workout_date) - new Date(a.workout_date);
+                                    if (dateDiff !== 0) return dateDiff;
+                                    return new Date(b.created_at) - new Date(a.created_at);
+                                });
+
+                                if (exLogs.length > 0) {
+                                    const lastLog = exLogs[0];
+                                    
+                                    const minReps = parseInt(lastLog.target_reps_min, 10) || 0;
+                                    const maxReps = parseInt(lastLog.target_reps_max, 10) || 0;
+                                    const setsPlanned = parseInt(lastLog.sets_planned, 10) || 0;
+                                    
+                                    let setsCompleted = 0;
+                                    let reachedMinReps = false;
+                                    let exceededUpperLimit = false;
+                                    let prevWeight = 0;
+
+                                    if (lastLog.set_logs && Array.isArray(lastLog.set_logs) && lastLog.set_logs.length > 0) {
+                                        setsCompleted = lastLog.set_logs.length;
+                                        reachedMinReps = lastLog.set_logs.every(s => (parseInt(s.reps, 10) || 0) >= minReps);
+                                        exceededUpperLimit = lastLog.set_logs.every(s => (parseInt(s.reps, 10) || 0) >= maxReps);
+                                        prevWeight = lastLog.set_logs.reduce((sum, s) => sum + (parseFloat(s.weight) || 0), 0) / setsCompleted;
+                                    } else {
+                                        setsCompleted = parseInt(lastLog.sets_completed, 10) || 0;
+                                        reachedMinReps = (parseInt(lastLog.actual_reps, 10) || 0) >= minReps;
+                                        exceededUpperLimit = (parseInt(lastLog.actual_reps, 10) || 0) >= maxReps;
+                                        prevWeight = parseFloat(lastLog.weight_used) || 0;
+                                    }
+
+                                    const completedPlannedSets = setsCompleted >= setsPlanned;
+                                    const success = completedPlannedSets && reachedMinReps;
+
+                                    let suggestedWeight = prevWeight;
+                                    let status = "Maintain Current Weight";
+
+                                    if (success) {
+                                        status = "Ready to Progress 🔥";
+                                        const percentIncrease = exceededUpperLimit ? 0.05 : 0.025;
+                                        const rawIncrease = prevWeight * percentIncrease;
+                                        let roundedIncrease = Math.round(rawIncrease / 2.5) * 2.5;
+                                        if (roundedIncrease < 2.5) roundedIncrease = 2.5;
+                                        suggestedWeight = prevWeight + roundedIncrease;
+                                    }
+
+                                    suggestedWeight = Math.round(suggestedWeight * 10) / 10;
+
+                                    progressionMap[ex.id] = {
+                                        weight: suggestedWeight,
+                                        reps: ex.reps,
+                                        status: status
+                                    };
+                                }
                             });
                             setExercisePRs(prMap);
+                            setProgressionSuggestions(progressionMap);
                         }
 
                         // Check if today's workout has already been completed in DB
@@ -640,6 +705,34 @@ export default function TodayWorkout() {
                                         </span>
                                     </div>
                                 </div>
+
+                                {/* Progressive Overload Suggestion */}
+                                {progressionSuggestions[ex.id] ? (
+                                    <div className="mb-4 px-3 py-2 bg-[#09090f] border border-cyber-blue/15 rounded text-xs flex justify-between items-center">
+                                        <div>
+                                            <span className="text-gray-500 uppercase tracking-widest text-[9px] block">Coach Suggestion</span>
+                                            <span className="font-orbitron text-gray-300 font-semibold">
+                                                Weight: <span className="text-cyber-cyan font-bold">{progressionSuggestions[ex.id].weight}kg</span>
+                                                {progressionSuggestions[ex.id].reps && (
+                                                    <> | Reps: <span className="text-gray-300 font-semibold">{progressionSuggestions[ex.id].reps}</span></>
+                                                )}
+                                            </span>
+                                        </div>
+                                        <div>
+                                            <span className={`font-orbitron text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${
+                                                progressionSuggestions[ex.id].status.includes('Progress') 
+                                                    ? 'bg-cyber-cyan/10 text-cyber-cyan border border-cyber-cyan/30 shadow-[0_0_8px_rgba(0,245,255,0.2)]' 
+                                                    : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
+                                            }`}>
+                                                {progressionSuggestions[ex.id].status}
+                                            </span>
+                                        </div>
+                                    </div>
+                                ) : (
+                                    <div className="mb-4 px-3 py-2 bg-[#09090f] border border-dashed border-gray-800 rounded text-[9.5px] text-gray-500 italic">
+                                        No progression suggestion available yet. Complete this workout to receive future overload recommendations.
+                                    </div>
+                                )}
 
                                 <div className="grid grid-cols-2 gap-3 mb-3">
                                     <div>
