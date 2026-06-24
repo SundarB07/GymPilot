@@ -1,9 +1,15 @@
-import { Outlet, NavLink } from 'react-router-dom';
-import { Home, ClipboardList, Dumbbell, Apple, LogOut, Sparkles, Trophy, Scale, TrendingUp } from 'lucide-react';
+import { useState } from 'react';
+import { Outlet, NavLink, useLocation } from 'react-router-dom';
+import { Home, ClipboardList, Dumbbell, Apple, LogOut, Sparkles, Trophy, Scale, TrendingUp, MoreHorizontal } from 'lucide-react';
 import { useAuth } from '../contexts/AuthContext';
 
 export default function Layout() {
     const { signOut, user, displayName } = useAuth();
+    const [isMoreOpen, setIsMoreOpen] = useState(false);
+    const location = useLocation();
+
+    const morePaths = ['/plan', '/records', '/weight', '/weekly-progress'];
+    const isMoreActive = morePaths.includes(location.pathname);
 
     return (
         <div className="min-h-screen flex flex-col md:flex-row bg-cyber-bg text-gray-300">
@@ -76,7 +82,7 @@ export default function Layout() {
                 {/* Mobile Bottom Navigation (Hidden on Laptop/Desktop) */}
                 <nav className="md:hidden fixed bottom-0 z-50 w-full bg-[#07070c] border-t border-cyber-blue/20 shadow-[0_-5px_20px_rgba(0,204,255,0.15)] backdrop-blur-xl bg-opacity-90">
                     <div className="flex justify-around items-center h-16">
-                        <NavLink to="/" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
+                        <NavLink to="/" onClick={() => setIsMoreOpen(false)} className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
                             {({ isActive }) => (
                                 <>
                                     <Home size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
@@ -84,15 +90,7 @@ export default function Layout() {
                                 </>
                             )}
                         </NavLink>
-                        <NavLink to="/plan" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
-                            {({ isActive }) => (
-                                <>
-                                    <ClipboardList size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Workout Plan</span>
-                                </>
-                            )}
-                        </NavLink>
-                        <NavLink to="/workout" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
+                        <NavLink to="/workout" onClick={() => setIsMoreOpen(false)} className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
                             {({ isActive }) => (
                                 <>
                                     <Dumbbell size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
@@ -100,7 +98,7 @@ export default function Layout() {
                                 </>
                             )}
                         </NavLink>
-                        <NavLink to="/diet-plan" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
+                        <NavLink to="/diet-plan" onClick={() => setIsMoreOpen(false)} className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
                             {({ isActive }) => (
                                 <>
                                     <Sparkles size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
@@ -108,7 +106,7 @@ export default function Layout() {
                                 </>
                             )}
                         </NavLink>
-                        <NavLink to="/diet" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
+                        <NavLink to="/diet" onClick={() => setIsMoreOpen(false)} className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
                             {({ isActive }) => (
                                 <>
                                     <Apple size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
@@ -116,32 +114,66 @@ export default function Layout() {
                                 </>
                             )}
                         </NavLink>
-                        <NavLink to="/records" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
-                            {({ isActive }) => (
-                                <>
-                                    <Trophy size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Records</span>
-                                </>
-                            )}
-                        </NavLink>
-                        <NavLink to="/weight" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
-                            {({ isActive }) => (
-                                <>
-                                    <Scale size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Weight</span>
-                                </>
-                            )}
-                        </NavLink>
-                        <NavLink to="/weekly-progress" className={({ isActive }) => `flex flex-col items-center justify-center w-full h-full transition-all duration-300 ${isActive ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}>
-                            {({ isActive }) => (
-                                <>
-                                    <TrendingUp size={18} className={isActive ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
-                                    <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isActive ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>Weekly</span>
-                                </>
-                            )}
-                        </NavLink>
+                        <button 
+                            onClick={() => setIsMoreOpen(!isMoreOpen)} 
+                            className={`flex flex-col items-center justify-center w-full h-full transition-all duration-300 focus:outline-none ${isMoreActive || isMoreOpen ? 'text-cyber-cyan scale-105' : 'text-gray-500 hover:text-cyber-blue'}`}
+                        >
+                            <MoreHorizontal size={18} className={isMoreActive || isMoreOpen ? "text-cyber-cyan drop-shadow-[0_0_8px_rgba(0,245,255,0.8)]" : "text-gray-500"} />
+                            <span className={`mobile-nav-label uppercase font-orbitron mt-1 ${isMoreActive || isMoreOpen ? 'text-cyber-cyan font-bold drop-shadow-[0_0_4px_rgba(0,245,255,0.4)]' : ''}`}>More</span>
+                        </button>
                     </div>
                 </nav>
+
+                {/* More Slide-up Drawer Menu (Hidden on Desktop) */}
+                <div 
+                    className={`md:hidden fixed inset-0 z-40 transition-opacity duration-300 ${isMoreOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'}`}
+                >
+                    <div 
+                        onClick={() => setIsMoreOpen(false)} 
+                        className="absolute inset-0 bg-black/60 backdrop-blur-sm"
+                    />
+                    <div 
+                        className={`absolute bottom-16 left-0 right-0 bg-[#07070c] border-t border-cyber-cyan/35 shadow-[0_-5px_25px_rgba(0,245,255,0.25)] rounded-t-2xl p-6 space-y-4 transition-transform duration-300 transform ${isMoreOpen ? 'translate-y-0' : 'translate-y-full'}`}
+                    >
+                        <div className="w-12 h-1 bg-gray-800 rounded-full mx-auto mb-2" />
+                        <h3 className="font-orbitron text-xs text-cyber-cyan uppercase tracking-widest text-center border-b border-cyber-blue/10 pb-2">Secondary Systems</h3>
+                        
+                        <div className="grid grid-cols-2 gap-3 pt-2">
+                            <NavLink 
+                                to="/plan" 
+                                onClick={() => setIsMoreOpen(false)}
+                                className={({ isActive }) => `flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'bg-[#0b0b12]/50 border-gray-800/80 text-gray-400 hover:border-gray-700 hover:text-white'}`}
+                            >
+                                <ClipboardList size={20} className="mb-1.5" />
+                                <span className="text-xs uppercase font-orbitron font-semibold tracking-wide">Workout Plan</span>
+                            </NavLink>
+                            <NavLink 
+                                to="/records" 
+                                onClick={() => setIsMoreOpen(false)}
+                                className={({ isActive }) => `flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'bg-[#0b0b12]/50 border-gray-800/80 text-gray-400 hover:border-gray-700 hover:text-white'}`}
+                            >
+                                <Trophy size={20} className="mb-1.5" />
+                                <span className="text-xs uppercase font-orbitron font-semibold tracking-wide">Records</span>
+                            </NavLink>
+                            <NavLink 
+                                to="/weight" 
+                                onClick={() => setIsMoreOpen(false)}
+                                className={({ isActive }) => `flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'bg-[#0b0b12]/50 border-gray-800/80 text-gray-400 hover:border-gray-700 hover:text-white'}`}
+                            >
+                                <Scale size={20} className="mb-1.5" />
+                                <span className="text-xs uppercase font-orbitron font-semibold tracking-wide">Weight</span>
+                            </NavLink>
+                            <NavLink 
+                                to="/weekly-progress" 
+                                onClick={() => setIsMoreOpen(false)}
+                                className={({ isActive }) => `flex flex-col items-center justify-center p-4 rounded-xl border transition-all duration-300 ${isActive ? 'bg-cyber-blue/10 text-cyber-cyan border-cyber-cyan shadow-[0_0_15px_rgba(0,204,255,0.15)]' : 'bg-[#0b0b12]/50 border-gray-800/80 text-gray-400 hover:border-gray-700 hover:text-white'}`}
+                            >
+                                <TrendingUp size={20} className="mb-1.5" />
+                                <span className="text-xs uppercase font-orbitron font-semibold tracking-wide text-center">Weekly Progress</span>
+                            </NavLink>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     );
