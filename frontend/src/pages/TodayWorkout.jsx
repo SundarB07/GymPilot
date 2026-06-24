@@ -708,7 +708,7 @@ export default function TodayWorkout() {
 
                                 {/* Progressive Overload Suggestion */}
                                 {progressionSuggestions[ex.id] ? (
-                                    <div className="mb-4 px-3 py-2 bg-[#09090f] border border-cyber-blue/15 rounded text-xs flex justify-between items-center">
+                                    <div className="mb-4 px-3 py-2 bg-[#09090f] border border-cyber-blue/15 rounded text-xs flex justify-between items-center gap-3">
                                         <div>
                                             <span className="text-gray-500 uppercase tracking-widest text-[9px] block">Coach Suggestion</span>
                                             <span className="font-orbitron text-gray-300 font-semibold">
@@ -719,12 +719,19 @@ export default function TodayWorkout() {
                                             </span>
                                         </div>
                                         <div>
-                                            <span className={`font-orbitron text-[9px] uppercase font-bold tracking-wider px-2 py-0.5 rounded ${
+                                            <span className={`font-orbitron text-[8.5px] sm:text-[9.5px] uppercase font-bold tracking-wider px-3 py-1 sm:py-1.5 rounded-full whitespace-nowrap inline-flex items-center justify-center min-h-[22px] sm:min-h-[26px] transition-all duration-300 ${
                                                 progressionSuggestions[ex.id].status.includes('Progress') 
                                                     ? 'bg-cyber-cyan/10 text-cyber-cyan border border-cyber-cyan/30 shadow-[0_0_8px_rgba(0,245,255,0.2)]' 
-                                                    : 'bg-gray-800/50 text-gray-400 border border-gray-700/50'
+                                                    : 'bg-cyber-blue/5 text-cyber-blue border border-cyber-blue/25 shadow-[0_0_8px_rgba(0,204,255,0.15)]'
                                             }`}>
-                                                {progressionSuggestions[ex.id].status}
+                                                {progressionSuggestions[ex.id].status === "Maintain Current Weight" ? (
+                                                    <>
+                                                        <span className="hidden sm:inline">Maintain Current Weight</span>
+                                                        <span className="inline sm:hidden">Maintain Weight</span>
+                                                    </>
+                                                ) : (
+                                                    progressionSuggestions[ex.id].status
+                                                )}
                                             </span>
                                         </div>
                                     </div>
