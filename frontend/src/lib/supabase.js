@@ -14,3 +14,6 @@ const key = supabaseAnonKey || 'placeholder-key'
 
 export const supabase = createClient(url, key)
 
+// Trigger redeployment to bake environment variables into the production bundle
+
+
