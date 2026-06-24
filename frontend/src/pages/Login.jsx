@@ -35,6 +35,12 @@ export default function Login() {
                     <p className="text-gray-400 mt-2">Initialize Your Protocol</p>
                 </div>
 
+                {(!import.meta.env.VITE_SUPABASE_URL || !import.meta.env.VITE_SUPABASE_ANON_KEY) && (
+                    <div className="bg-amber-500/10 border border-amber-500/50 text-amber-400 p-3 rounded-lg text-sm text-center">
+                        Warning: Supabase environment variables are missing on this deployment. Please configure VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your Vercel project settings.
+                    </div>
+                )}
+
                 {error && <div className="bg-red-500/10 border border-red-500/50 text-red-400 p-3 rounded-lg text-sm text-center">{error}</div>}
 
                 <form onSubmit={handleSubmit} className="space-y-6">
