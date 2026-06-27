@@ -141,6 +141,15 @@ export default function GeneratePlan() {
                         step="1"
                         value={formData.daysPerWeek}
                         onChange={handleChange}
+                        onInvalid={(e) => {
+                            const val = parseInt(e.target.value, 10);
+                            if (val >= 7) {
+                                e.target.setCustomValidity('There should be at least 1 day as rest day');
+                            } else {
+                                e.target.setCustomValidity('Please select between 1 and 6 training days');
+                            }
+                        }}
+                        onInput={(e) => e.target.setCustomValidity('')}
                         placeholder="Enter days per week (1-6)"
                         className="cyber-input"
                         required
