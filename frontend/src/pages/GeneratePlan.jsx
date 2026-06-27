@@ -144,7 +144,7 @@ export default function GeneratePlan() {
                         onInvalid={(e) => {
                             const val = parseInt(e.target.value, 10);
                             if (val >= 7) {
-                                e.target.setCustomValidity('There should be at least 1 day as rest day');
+                                e.target.setCustomValidity('There Should Be At Least 1 Day As Rest Day');
                             } else {
                                 e.target.setCustomValidity('Please select between 1 and 6 training days');
                             }

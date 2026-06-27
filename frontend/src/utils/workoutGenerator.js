@@ -1,9 +1,47 @@
 export function generateWorkoutPlan(preferences, allExercises) {
     const { goal, level, daysPerWeek, timePerSession } = preferences;
 
-    let split = [];
-    const days = parseInt(daysPerWeek);
+    const days = parseInt(daysPerWeek, 10);
+    const time = parseInt(timePerSession, 10);
 
+    // STEP 1: Base exercise count from session duration
+    const baseCount = Math.floor(time / 12);
+
+    // STEP 2: Experience level modifier
+    let levelModifier = 1.0;
+    if (level === 'Beginner') levelModifier = 0.75;
+    else if (level === 'Advanced') levelModifier = 1.25;
+
+    let adjustedCount = Math.round(baseCount * levelModifier);
+
+    // STEP 3: Days per week modifier
+    if (days <= 3) {
+        adjustedCount += 1;
+    } else if (days === 6) {
+        adjustedCount -= 1;
+    }
+
+    // STEP 4: Goal modifier
+    if (goal === 'Strength') {
+        adjustedCount -= 1;
+    } else if (goal === 'Fat Loss' || goal === 'Endurance') {
+        adjustedCount += 1;
+    }
+
+    // STEP 5: Final Clamp by experience level
+    let finalCount = adjustedCount;
+    if (level === 'Beginner') {
+        finalCount = Math.max(3, Math.min(5, finalCount));
+    } else if (level === 'Intermediate') {
+        finalCount = Math.max(4, Math.min(7, finalCount));
+    } else if (level === 'Advanced') {
+        finalCount = Math.max(5, Math.min(9, finalCount));
+    }
+
+    const exercisesPerSession = finalCount;
+
+    // Define splits
+    let split = [];
     if (days === 1) {
         split = ['Full Body', 'Rest', 'Rest', 'Rest', 'Rest', 'Rest', 'Rest'];
     } else if (days === 2) {
@@ -20,20 +58,112 @@ export function generateWorkoutPlan(preferences, allExercises) {
         split = ['Full Body', 'Rest', 'Full Body', 'Rest', 'Full Body', 'Rest', 'Rest'];
     }
 
-    const time = parseInt(timePerSession);
-    let exercisesPerSession = 5;
-    if (time >= 60) exercisesPerSession = 6;
-    if (time >= 90) exercisesPerSession = 8;
+    // Helper for selecting exercises with strict limits and uniqueness
+    const selectExercisesForDay = (targetMuscles, totalCount) => {
+        let compoundRatio = 0.5;
+        if (level === 'Beginner') compoundRatio = 0.7;
+        else if (level === 'Intermediate') compoundRatio = 0.6;
 
-    const getExercises = (muscles, count) => {
-        let filtered = allExercises.filter(ex => muscles.some(m => ex.main_muscle_group.toLowerCase().includes(m.toLowerCase())));
-        if (filtered.length === 0) return [];
+        let maxPerMuscle = {
+            chest: 99, back: 99, legs: 99, shoulders: 99, arms: 99, core: 99, 'full body': 99
+        };
+        if (level === 'Beginner') {
+            maxPerMuscle = {
+                chest: 2, back: 2, legs: 2, shoulders: 1, arms: 1, core: 1, 'full body': 1
+            };
+        } else if (level === 'Intermediate') {
+            maxPerMuscle = {
+                chest: 3, back: 3, legs: 3, shoulders: 2, arms: 2, core: 2, 'full body': 2
+            };
+        } else if (level === 'Advanced') {
+            maxPerMuscle = {
+                chest: 4, back: 4, legs: 4, shoulders: 3, arms: 3, core: 2, 'full body': 2
+            };
+        }
 
-        // Simple shuffle
-        filtered = filtered.sort(() => 0.5 - Math.random());
+        const targetMusclesLower = targetMuscles.map(m => m.toLowerCase());
+        let eligible = allExercises.filter(ex => 
+            targetMusclesLower.includes(ex.main_muscle_group.toLowerCase())
+        );
 
-        // In case we don't have enough exercises, we might repeat or just return what we have
-        return filtered.slice(0, count);
+        // Shuffle eligible exercises
+        eligible = eligible.sort(() => 0.5 - Math.random());
+
+        // Separate compound and isolation
+        let compounds = eligible.filter(ex => ex.mechanics.toLowerCase() === 'compound');
+        let isolations = eligible.filter(ex => ex.mechanics.toLowerCase() === 'isolation');
+
+        const targetCompound = Math.round(totalCount * compoundRatio);
+        const targetIsolation = totalCount - targetCompound;
+
+        const selected = [];
+        const selectedIds = new Set();
+        const selectedSubMuscles = new Set();
+        const muscleCounts = {
+            chest: 0, back: 0, legs: 0, shoulders: 0, arms: 0, core: 0, 'full body': 0
+        };
+
+        const tryPick = (pool, countToPick) => {
+            let pickedCount = 0;
+            let attempts = 0;
+            let respectSubMuscle = true;
+            let respectMuscleLimit = true;
+
+            while (pickedCount < countToPick && attempts < 3) {
+                let addedInThisPass = false;
+
+                for (const ex of pool) {
+                    if (pickedCount >= countToPick) break;
+                    if (selectedIds.has(ex.id)) continue;
+
+                    const muscle = ex.main_muscle_group.toLowerCase();
+                    const subMuscle = ex.sub_muscle_group.toLowerCase();
+
+                    if (respectMuscleLimit && (muscleCounts[muscle] || 0) >= (maxPerMuscle[muscle] || 99)) {
+                        continue;
+                    }
+                    if (respectSubMuscle && selectedSubMuscles.has(subMuscle)) {
+                        continue;
+                    }
+
+                    selected.push(ex);
+                    selectedIds.add(ex.id);
+                    selectedSubMuscles.add(subMuscle);
+                    muscleCounts[muscle] = (muscleCounts[muscle] || 0) + 1;
+                    pickedCount++;
+                    addedInThisPass = true;
+                }
+
+                if (!addedInThisPass) {
+                    if (respectSubMuscle) {
+                        respectSubMuscle = false;
+                    } else if (respectMuscleLimit) {
+                        respectMuscleLimit = false;
+                    } else {
+                        break;
+                    }
+                }
+                attempts++;
+            }
+            return pickedCount;
+        };
+
+        tryPick(compounds, targetCompound);
+        tryPick(isolations, targetIsolation);
+
+        if (selected.length < totalCount) {
+            let remaining = totalCount - selected.length;
+            for (const ex of eligible) {
+                if (remaining <= 0) break;
+                if (selectedIds.has(ex.id)) continue;
+
+                selected.push(ex);
+                selectedIds.add(ex.id);
+                remaining--;
+            }
+        }
+
+        return selected;
     };
 
     const plan_data = {
@@ -56,7 +186,7 @@ export function generateWorkoutPlan(preferences, allExercises) {
             if (focus === 'Legs') targetMuscles = ['Legs'];
             if (focus === 'Shoulders & Core') targetMuscles = ['Shoulders', 'Core'];
 
-            const selected = getExercises(targetMuscles, exercisesPerSession);
+            const selected = selectExercisesForDay(targetMuscles, exercisesPerSession);
 
             dailyExercises = selected.map(ex => {
                 let sets = 3;
@@ -106,7 +236,7 @@ export function generateWorkoutPlan(preferences, allExercises) {
                 if (focus === 'Legs') targetMuscles = ['Legs'];
                 if (focus === 'Shoulders & Core') targetMuscles = ['Shoulders', 'Core'];
 
-                const selected = getExercises(targetMuscles, exercisesPerSession);
+                const selected = selectExercisesForDay(targetMuscles, exercisesPerSession);
                 dailyExercises = selected.map(ex => {
                     let sets = 3;
                     let reps = '8-12';
