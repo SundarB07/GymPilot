@@ -16,6 +16,18 @@ export default function Dashboard() {
     const [todayProgressions, setTodayProgressions] = useState([]);
     const [currentWeight, setCurrentWeight] = useState(null);
     const [weeklyWeightChange, setWeeklyWeightChange] = useState(null);
+    const [isFirstVisit, setIsFirstVisit] = useState(false);
+
+    useEffect(() => {
+        if (user) {
+            const hasVisitedKey = `dashboardVisited_${user.id}`;
+            const visited = localStorage.getItem(hasVisitedKey);
+            if (!visited) {
+                setIsFirstVisit(true);
+                localStorage.setItem(hasVisitedKey, 'true');
+            }
+        }
+    }, [user]);
 
     useEffect(() => {
         async function fetchPlanAndStreak() {
@@ -293,7 +305,7 @@ export default function Dashboard() {
                 <div>
                     <h1 className="text-2xl font-bold neon-text md:hidden">GymPilot</h1>
                     <h1 className="text-3xl font-extrabold font-orbitron tracking-wider text-white hidden md:block">COMMAND CENTER</h1>
-                    <p className="text-sm text-gray-400">Welcome back, {displayName}</p>
+                    <p className="text-sm text-gray-400">{isFirstVisit ? 'Welcome' : 'Welcome back'}, {displayName}</p>
                 </div>
                 <button onClick={signOut} className="md:hidden text-xs text-cyber-blue border border-cyber-blue/30 px-3 py-1 rounded hover:bg-cyber-blue/10 transition-colors">
                     Logout
