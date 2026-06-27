@@ -4,13 +4,17 @@ export function generateWorkoutPlan(preferences, allExercises) {
     let split = [];
     const days = parseInt(daysPerWeek);
 
-    if (days <= 3) {
+    if (days === 1) {
+        split = ['Full Body', 'Rest', 'Rest', 'Rest', 'Rest', 'Rest', 'Rest'];
+    } else if (days === 2) {
+        split = ['Upper Body', 'Rest', 'Rest', 'Lower Body', 'Rest', 'Rest', 'Rest'];
+    } else if (days === 3) {
         split = ['Full Body', 'Rest', 'Full Body', 'Rest', 'Full Body', 'Rest', 'Rest'];
     } else if (days === 4) {
         split = ['Upper Body', 'Lower Body', 'Rest', 'Upper Body', 'Lower Body', 'Rest', 'Rest'];
     } else if (days === 5) {
-        split = ['Chest & Triceps', 'Back & Biceps', 'Rest', 'Legs', 'Shoulders & Core', 'Rest', 'Rest'];
-    } else if (days >= 6) {
+        split = ['Push', 'Pull', 'Legs', 'Upper Body', 'Lower Body', 'Rest', 'Rest'];
+    } else if (days === 6) {
         split = ['Push', 'Pull', 'Legs', 'Push', 'Pull', 'Legs', 'Rest'];
     } else {
         split = ['Full Body', 'Rest', 'Full Body', 'Rest', 'Full Body', 'Rest', 'Rest'];
@@ -78,6 +82,55 @@ export function generateWorkoutPlan(preferences, allExercises) {
             is_rest: focus === 'Rest',
             exercises: dailyExercises
         });
+    }
+
+    // Validation: check that the generated workout days count exactly matches daysPerWeek
+    let generatedWorkoutDays = plan_data.weekly_schedule.filter(d => !d.is_rest && d.focus !== 'Rest').length;
+    if (generatedWorkoutDays !== days) {
+        // Reset all to Rest
+        plan_data.weekly_schedule = [];
+
+        const workoutFoci = ['Full Body', 'Upper Body', 'Lower Body', 'Push', 'Pull', 'Legs', 'Shoulders & Core'];
+        for (let i = 0; i < 7; i++) {
+            const isWorkout = i < days;
+            const focus = isWorkout ? workoutFoci[i % workoutFoci.length] : 'Rest';
+            let dailyExercises = [];
+
+            if (isWorkout) {
+                let targetMuscles = [];
+                if (focus === 'Full Body') targetMuscles = ['Chest', 'Back', 'Legs', 'Shoulders', 'Arms', 'Core'];
+                if (focus === 'Upper Body') targetMuscles = ['Chest', 'Back', 'Shoulders', 'Arms'];
+                if (focus === 'Lower Body') targetMuscles = ['Legs', 'Core'];
+                if (focus === 'Push') targetMuscles = ['Chest', 'Shoulders', 'Arms'];
+                if (focus === 'Pull') targetMuscles = ['Back', 'Arms'];
+                if (focus === 'Legs') targetMuscles = ['Legs'];
+                if (focus === 'Shoulders & Core') targetMuscles = ['Shoulders', 'Core'];
+
+                const selected = getExercises(targetMuscles, exercisesPerSession);
+                dailyExercises = selected.map(ex => {
+                    let sets = 3;
+                    let reps = '8-12';
+                    if (goal === 'Strength') { sets = 4; reps = '4-6'; }
+                    if (goal === 'Fat Loss') { sets = 3; reps = '12-15'; }
+                    if (level === 'Beginner') { sets = Math.max(2, sets - 1); }
+                    return {
+                        id: ex.id,
+                        name: ex.exercise_name,
+                        muscle_group: ex.main_muscle_group,
+                        sets: sets,
+                        reps: reps
+                    };
+                });
+            }
+
+            plan_data.weekly_schedule.push({
+                day_index: i,
+                day_name: daysOfWeek[i],
+                focus: focus,
+                is_rest: !isWorkout,
+                exercises: dailyExercises
+            });
+        }
     }
 
     return plan_data;

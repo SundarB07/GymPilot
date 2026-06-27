@@ -27,6 +27,20 @@ export default function GeneratePlan() {
         setLoading(true);
         setError('');
 
+        const days = parseInt(formData.daysPerWeek, 10);
+
+        if (days === 7) {
+            setError("You need to take at least 1 rest day per week for recovery. Maximum workout days allowed is 6.");
+            setLoading(false);
+            return;
+        }
+
+        if (isNaN(days) || days < 1 || days > 6) {
+            setError("Invalid training days selected. Please choose between 1 and 6 days per week.");
+            setLoading(false);
+            return;
+        }
+
         try {
             // 1. Fetch available exercises from Supabase
             const { data: exercises, error: exError } = await supabase
@@ -42,6 +56,12 @@ export default function GeneratePlan() {
             // 2. Generate plan using heuristics
             const planData = generateWorkoutPlan(formData, exercises);
 
+            // Validation: Count generated workout days
+            const generatedWorkoutDays = planData.weekly_schedule.filter(day => !day.is_rest && day.focus !== 'Rest').length;
+            if (generatedWorkoutDays !== days) {
+                throw new Error(`Workout plan generation failed: generated days count (${generatedWorkoutDays}) does not match selected days (${days}).`);
+            }
+
             // 3. Upsert to Supabase
             const { error: upsertError } = await supabase
                 .from('workoutplans')
@@ -49,7 +69,7 @@ export default function GeneratePlan() {
                     user_id: user.id,
                     goal: formData.goal,
                     level: formData.level,
-                    days_per_week: parseInt(formData.daysPerWeek),
+                    days_per_week: days,
                     time_per_session: parseInt(formData.timePerSession),
                     plan_data: planData,
                     updated_at: new Date().toISOString()
@@ -116,12 +136,12 @@ export default function GeneratePlan() {
                     <input
                         type="number"
                         name="daysPerWeek"
-                        min="2"
-                        max="7"
+                        min="1"
+                        max="6"
                         step="1"
                         value={formData.daysPerWeek}
                         onChange={handleChange}
-                        placeholder="Enter days per week (2-7)"
+                        placeholder="Enter days per week (1-6)"
                         className="cyber-input"
                         required
                     />
