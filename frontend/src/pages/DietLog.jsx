@@ -714,7 +714,11 @@ export default function DietLog() {
                                                             <span className={`text-sm font-semibold ${consumed ? 'text-gray-500 line-through' : 'text-white'}`}>{item.name}</span>
                                                         </div>
                                                         <span className="text-xs text-gray-500 font-orbitron">
-                                                            {item.calories} kcal | P: {item.protein}g | C: {item.carbs}g | F: {item.fat}g
+                                                            {item.type === 'Supplement' || (item.name.toLowerCase().includes('creatine') && item.calories === 0) ? (
+                                                                "Supplement"
+                                                            ) : (
+                                                                `${item.calories} kcal | P: ${item.protein}g | C: ${item.carbs}g | F: ${item.fat}g`
+                                                            )}
                                                         </span>
                                                     </label>
                                                 );

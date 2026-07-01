@@ -504,9 +504,13 @@ export default function MyDietPlan() {
                                                         (Optional{item.alternative_name ? ` — alternative: ${item.alternative_name}` : ''})
                                                     </span>
                                                 )}
-                                                <span className="text-xs text-gray-500 ml-2">
-                                                    ({item.calories} kcal | P: {item.protein}g | C: {item.carbs}g | F: {item.fat}g)
-                                                </span>
+                                                {item.type === 'Supplement' || (item.name.toLowerCase().includes('creatine') && item.calories === 0) ? (
+                                                     <span className="text-xs text-cyber-cyan/80 font-orbitron ml-2">— Supplement</span>
+                                                 ) : (
+                                                     <span className="text-xs text-gray-500 ml-2">
+                                                         ({item.calories} kcal | P: {item.protein}g | C: {item.carbs}g | F: {item.fat}g)
+                                                     </span>
+                                                 )}
                                             </span>
                                             <button 
                                                 onClick={() => triggerReplaceItem(mealIndex, itemIndex)}

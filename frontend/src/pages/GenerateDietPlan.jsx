@@ -361,7 +361,12 @@ export default function GenerateDietPlan() {
 
         try {
             // Generate diet plan details algorithmically using the preloaded dbFoods
-            const planDetails = generateDietPlan(formData, dbFoods || []);
+            const payload = {
+                ...formData,
+                includeWheyProtein: formData.includeWhey,
+                includeCreatine: formData.includeCreatine
+            };
+            const planDetails = generateDietPlan(payload, dbFoods || []);
 
             // Upsert to Supabase
             const { error: upsertError } = await supabase

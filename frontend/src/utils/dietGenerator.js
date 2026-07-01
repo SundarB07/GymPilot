@@ -190,8 +190,14 @@ export function generateDietPlan(formData, dbFoods = []) {
         gender = 'male',
         activityLevel = 'moderate',
         goal,
-        style = 'Veg'
+        style = 'Veg',
+        includeWhey,
+        includeWheyProtein,
+        includeCreatine
     } = formData;
+
+    const wheySelected = !!(includeWhey || includeWheyProtein);
+    const creatineSelected = !!includeCreatine;
 
     const weight = parseFloat(currentWeight);
     const heightCm = parseFloat(height);
@@ -257,12 +263,24 @@ export function generateDietPlan(formData, dbFoods = []) {
         return filteredFoods.find(f => f.food_name.toLowerCase().includes(nameQuery.toLowerCase())) || null;
     };
 
+    let foodProteinTarget = protein;
+    let foodCarbTarget = carbs;
+    let foodFatTarget = fat;
+    let foodCalorieTarget = targetCalories;
+
+    if (wheySelected) {
+        foodProteinTarget = Math.max(30, protein - 24);
+        foodCarbTarget = Math.max(30, carbs - 3);
+        foodFatTarget = Math.max(10, fat - 2);
+        foodCalorieTarget = Math.max(1000, targetCalories - 120);
+    }
+
     // Budgets based on 35% / 30% / 15% / 20%
     const budgets = {
-        breakfast: { cal: targetCalories * 0.35, p: protein * 0.35, c: carbs * 0.35, f: fat * 0.35 },
-        lunch: { cal: targetCalories * 0.30, p: protein * 0.30, c: carbs * 0.30, f: fat * 0.30 },
-        snack: { cal: targetCalories * 0.15, p: protein * 0.15, c: carbs * 0.15, f: fat * 0.15 },
-        dinner: { cal: targetCalories * 0.20, p: protein * 0.20, c: carbs * 0.20, f: fat * 0.20 }
+        breakfast: { cal: foodCalorieTarget * 0.35, p: foodProteinTarget * 0.35, c: foodCarbTarget * 0.35, f: foodFatTarget * 0.35 },
+        lunch: { cal: foodCalorieTarget * 0.30, p: foodProteinTarget * 0.30, c: foodCarbTarget * 0.30, f: foodFatTarget * 0.30 },
+        snack: { cal: foodCalorieTarget * 0.15, p: foodProteinTarget * 0.15, c: foodCarbTarget * 0.15, f: foodFatTarget * 0.15 },
+        dinner: { cal: foodCalorieTarget * 0.20, p: foodProteinTarget * 0.20, c: foodCarbTarget * 0.20, f: foodFatTarget * 0.20 }
     };
 
     const getServingsList = (min, max, inc) => {
@@ -399,9 +417,9 @@ export function generateDietPlan(formData, dbFoods = []) {
     // 5. Deficit Filler Loop (Maximum 30 iterations)
     for (let fillIter = 0; fillIter < 30; fillIter++) {
         calculateTotals();
-        const pDeficit = protein - totalP;
-        const cDeficit = carbs - totalC;
-        const fDeficit = fat - totalF;
+        const pDeficit = foodProteinTarget - totalP;
+        const cDeficit = foodCarbTarget - totalC;
+        const fDeficit = foodFatTarget - totalF;
 
         if (pDeficit <= 5 && cDeficit <= 8 && fDeficit <= 3) {
             break;
@@ -594,38 +612,70 @@ export function generateDietPlan(formData, dbFoods = []) {
         }
     }
 
-    // 6. Supplement Support (Whey Protein scoop after food plan is completed)
-    calculateTotals();
-    const finalPDeficit = protein - totalP;
-    if (finalPDeficit >= 15) {
-        const wheyFood = getFood('Whey') || getFood('Whey Protein');
-        if (wheyFood) {
-            const wheyItem = getRealisticPortion(wheyFood, 0.33); // 33g
-            if (wheyItem) {
-                wheyItem.name = "1 Scoop Whey Protein";
-                snackItems.push(wheyItem);
-            }
-        } else {
-            snackItems.push({
-                name: "1 Scoop Whey Protein",
-                calories: 120,
-                protein: 25,
-                carbs: 2,
-                fat: 1.5,
-                fiber: 0,
-                is_optional: true,
-                alternative_name: null
-            });
+    // 6. Supplement Support (Whey Protein and Creatine Monohydrate)
+    const findMealForPlacement = (mealsList, priorities) => {
+        for (const priority of priorities) {
+            const found = mealsList.find(m => m.name.toLowerCase().includes(priority.toLowerCase()));
+            if (found) return found;
         }
+        return mealsList[0];
+    };
+
+    const mealsList = [
+        { name: '🌅 Breakfast (35%)', items: breakfastItems },
+        { name: '🍛 Lunch (30%)', items: lunchItems },
+        { name: '🥜 Snack (15%)', items: snackItems },
+        { name: '🌙 Dinner (20%)', items: dinnerItems }
+    ];
+
+    if (wheySelected) {
+        const wheyItem = {
+            name: "1 Scoop Whey Protein",
+            calories: 120,
+            protein: 24,
+            carbs: 3,
+            fat: 2,
+            fiber: 0,
+            is_optional: false,
+            alternative_name: null
+        };
+        const targetMeal = findMealForPlacement(mealsList, ['Post Workout', 'Snack']);
+        targetMeal.items.push(wheyItem);
     }
 
-    calculateTotals();
+    if (creatineSelected) {
+        const creatineItem = {
+            name: "Creatine Monohydrate (5g)",
+            calories: 0,
+            protein: 0,
+            carbs: 0,
+            fat: 0,
+            fiber: 0,
+            type: "Supplement",
+            is_optional: false,
+            alternative_name: null
+        };
+        const targetMeal = findMealForPlacement(mealsList, ['Post Workout', 'Snack', 'Breakfast']);
+        targetMeal.items.push(creatineItem);
+    }
+
+    // Recalculate totals including supplements (Creatine does not affect macro totals)
+    totalP = 0; totalC = 0; totalF = 0; totalCals = 0;
+    mealsList.forEach(meal => {
+        meal.items.forEach(item => {
+            if (item.name.toLowerCase().includes('creatine')) return;
+            totalP += item.protein;
+            totalC += item.carbs;
+            totalF += item.fat;
+            totalCals += item.calories;
+        });
+    });
 
     // 7. Dinner Safety Clamper (Ensure dinner calories never exceed 25% of daily total)
-    let dinnerCals = dinnerItems.reduce((sum, item) => sum + item.calories, 0);
+    let dinnerCals = mealsList[3].items.reduce((sum, item) => sum + item.calories, 0);
     if (dinnerCals > totalCals * 0.25) {
         const scaleDown = (totalCals * 0.22) / dinnerCals;
-        dinnerItems = dinnerItems.map(item => {
+        mealsList[3].items = mealsList[3].items.map(item => {
             const match = item.name.match(/^(\d+)/);
             const currentQty = match ? parseInt(match[1], 10) : 100;
             const unit = getFoodUnit(getFood(item.name.replace(/^\d+(g|ml)?\s+/, '')));
@@ -638,7 +688,18 @@ export function generateDietPlan(formData, dbFoods = []) {
             const dbFood = getFood(item.name.replace(/^\d+(g|ml)?\s+/, ''));
             return dbFood ? getRealisticPortion(dbFood, unit === 'piece' ? newQty : newQty / 100) : item;
         });
-        calculateTotals();
+
+        // Recalculate totals after dinner scaling
+        totalP = 0; totalC = 0; totalF = 0; totalCals = 0;
+        mealsList.forEach(meal => {
+            meal.items.forEach(item => {
+                if (item.name.toLowerCase().includes('creatine')) return;
+                totalP += item.protein;
+                totalC += item.carbs;
+                totalF += item.fat;
+                totalCals += item.calories;
+            });
+        });
     }
 
     const bestPlan = {
@@ -646,12 +707,7 @@ export function generateDietPlan(formData, dbFoods = []) {
         totalP,
         totalC,
         totalF,
-        meals: [
-            { name: '🌅 Breakfast (35%)', items: breakfastItems },
-            { name: '🍛 Lunch (30%)', items: lunchItems },
-            { name: '🥜 Snack (15%)', items: snackItems },
-            { name: '🌙 Dinner (20%)', items: dinnerItems }
-        ]
+        meals: mealsList
     };
 
     return {
