@@ -101,7 +101,10 @@ export default function MyDietPlan() {
         const item = meal.items[itemIndex];
         const currentFood = findDbFood(item.name);
         const currentGroup = getFoodGroup(currentFood);
-        const alternatives = dbFoods.filter(f => getFoodGroup(f) === currentGroup && f.food_name.toLowerCase() !== (currentFood ? currentFood.food_name.toLowerCase() : ''));
+        const alternatives = dbFoods.filter(f => {
+            if (plan && plan.style === 'Veg' && f.type === 'Non-Veg') return false;
+            return getFoodGroup(f) === currentGroup && f.food_name.toLowerCase() !== (currentFood ? currentFood.food_name.toLowerCase() : '');
+        });
 
         setReplaceModalData({
             mealIndex,

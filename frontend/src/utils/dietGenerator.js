@@ -28,6 +28,160 @@ export function calculateTDEE(weightKg, heightCm, age, gender, activityLevel) {
     return bmr * factor;
 }
 
+export function getFoodUnit(food) {
+    if (!food) return 'g';
+    const name = food.food_name.toLowerCase();
+    if (name.includes('egg') || name.includes('banana') || name.includes('apple') || name.includes('orange') || name.includes('chapati') || name.includes('roti') || name.includes('idli') || name.includes('dosa') || name.includes('appam')) {
+        return 'piece';
+    }
+    if (name.includes('milk') || name.includes('buttermilk') || (food.category && food.category.toLowerCase() === 'drink')) {
+        return 'ml';
+    }
+    return 'g';
+}
+
+export function getServingConstraints(food, isDinner = false) {
+    let min = food.min_serving !== undefined && food.min_serving !== null ? Number(food.min_serving) : null;
+    let pref = food.preferred_serving !== undefined && food.preferred_serving !== null ? Number(food.preferred_serving) : null;
+    let max = food.max_serving !== undefined && food.max_serving !== null ? Number(food.max_serving) : null;
+
+    if (min !== null && max !== null) {
+        if (isDinner && (food.food_name.toLowerCase().includes('chicken') || food.food_name.toLowerCase().includes('paneer'))) {
+            max = Math.min(max, 150);
+        }
+        return { min, pref: pref || min, max };
+    }
+
+    const name = food.food_name.toLowerCase();
+    const unit = getFoodUnit(food);
+
+    if (unit === 'piece') {
+        if (name.includes('egg white')) {
+            return { min: 2, pref: 4, max: isDinner ? 6 : 8 };
+        }
+        if (name.includes('egg')) {
+            return { min: 1, pref: 2, max: isDinner ? 2 : 4 };
+        }
+        if (name.includes('banana')) {
+            return { min: 1, pref: 1, max: isDinner ? 1 : 2 };
+        }
+        if (name.includes('apple') || name.includes('orange')) {
+            return { min: 1, pref: 1, max: 2 };
+        }
+        if (name.includes('chapati') || name.includes('roti')) {
+            return { min: 1, pref: 2, max: isDinner ? 3 : 4 };
+        }
+        if (name.includes('idli')) {
+            return { min: 2, pref: 3, max: 5 };
+        }
+        if (name.includes('dosa') || name.includes('appam')) {
+            return { min: 1, pref: 2, max: 3 };
+        }
+        return { min: 1, pref: 1, max: 3 };
+    } else if (unit === 'ml') {
+        if (name.includes('milk') || name.includes('buttermilk')) {
+            return { min: 100, pref: 200, max: 400 };
+        }
+        return { min: 100, pref: 200, max: 500 };
+    } else {
+        if (name.includes('chicken') || name.includes('fish') || name.includes('meat') || name.includes('paneer') || name.includes('tofu')) {
+            return { min: 100, pref: 150, max: isDinner ? 150 : 250 };
+        }
+        if (name.includes('rice')) {
+            return { min: 50, pref: 100, max: isDinner ? 100 : 200 };
+        }
+        if (name.includes('oats')) {
+            return { min: 30, pref: 50, max: 100 };
+        }
+        if (name.includes('peanut') || name.includes('almond') || name.includes('walnut') || name.includes('cashew') || name.includes('nut') || name.includes('seed')) {
+            return { min: 10, pref: 20, max: isDinner ? 10 : 30 };
+        }
+        if (name.includes('dal') || name.includes('rajma') || name.includes('chickpea') || name.includes('lentil') || name.includes('sprouts')) {
+            return { min: 30, pref: 50, max: 100 };
+        }
+        if (name.includes('vegetable') || name.includes('salad') || name.includes('broccoli')) {
+            return { min: 50, pref: 100, max: 200 };
+        }
+        return { min: 20, pref: 50, max: 150 };
+    }
+}
+
+export function getRealisticPortion(food, targetScale) {
+    if (!food) return null;
+    const name = food.food_name.toLowerCase();
+    const unit = getFoodUnit(food);
+    const constraints = getServingConstraints(food);
+
+    let qty = 1;
+    let scale = 1.0;
+    let nameWithQty = '';
+
+    let rawTarget = (unit === 'piece') ? targetScale : targetScale * 100;
+    rawTarget = Math.max(constraints.min, Math.min(constraints.max, rawTarget));
+
+    if (unit === 'piece') {
+        qty = Math.max(1, Math.round(rawTarget));
+        if (name.includes('egg white')) {
+            scale = (qty * 33) / 100;
+            nameWithQty = `${qty} Egg White${qty > 1 ? 's' : ''}`;
+        } else if (name.includes('egg')) {
+            scale = (qty * 50) / 100;
+            nameWithQty = `${qty} ${food.food_name}${qty > 1 ? 's' : ''}`;
+        } else if (name.includes('banana')) {
+            scale = qty;
+            nameWithQty = `${qty} Banana${qty > 1 ? 's' : ''}`;
+        } else if (name.includes('apple')) {
+            scale = qty;
+            nameWithQty = `${qty} Apple${qty > 1 ? 's' : ''}`;
+        } else if (name.includes('orange')) {
+            scale = qty;
+            nameWithQty = `${qty} Orange${qty > 1 ? 's' : ''}`;
+        } else if (name.includes('chapati') || name.includes('roti')) {
+            scale = qty;
+            nameWithQty = `${qty} Chapati${qty > 1 ? 's' : ''}`;
+        } else if (name.includes('idli')) {
+            scale = qty;
+            nameWithQty = `${qty} Idli${qty > 1 ? 's' : ''}`;
+        } else if (name.includes('dosa')) {
+            scale = qty;
+            nameWithQty = `${qty} Dosa${qty > 1 ? 's' : ''}`;
+        } else if (name.includes('appam')) {
+            scale = qty;
+            nameWithQty = `${qty} Appam${qty > 1 ? 's' : ''}`;
+        } else {
+            scale = qty;
+            nameWithQty = `${qty} serving${qty !== 1 ? 's' : ''} of ${food.food_name}`;
+        }
+    } else {
+        let increment = 25;
+        if (name.includes('chicken') || name.includes('fish') || name.includes('meat') || name.includes('paneer') || name.includes('tofu') || name.includes('rice')) {
+            increment = 50;
+        } else if (name.includes('peanut') || name.includes('almond') || name.includes('walnut') || name.includes('cashew') || name.includes('nut') || name.includes('seed') || name.includes('butter') || name.includes('oil') || name.includes('ghee')) {
+            increment = 10;
+        } else if (unit === 'ml') {
+            increment = 100;
+        }
+
+        let roundedQty = Math.round(rawTarget / increment) * increment;
+        roundedQty = Math.max(constraints.min, Math.min(constraints.max, roundedQty));
+
+        scale = roundedQty / 100;
+        const suffix = (unit === 'ml') ? 'ml' : 'g';
+        nameWithQty = `${roundedQty}${suffix} ${food.food_name}`;
+    }
+
+    return {
+        name: nameWithQty,
+        calories: Math.round(Number(food.calories_kcal) * scale),
+        protein: Math.round(Number(food.protein_g) * scale),
+        carbs: Math.round(Number(food.carbs_g) * scale),
+        fat: Math.round(Number(food.fat_g) * scale),
+        fiber: Math.round(Number(food.fiber_g || 0) * scale),
+        is_optional: !!food.is_optional,
+        alternative_name: food.alternative_name || null
+    };
+}
+
 export function generateDietPlan(formData, dbFoods = []) {
     const {
         age,
@@ -35,18 +189,16 @@ export function generateDietPlan(formData, dbFoods = []) {
         currentWeight,
         gender = 'male',
         activityLevel = 'moderate',
-        goal, // 'loss', 'maintenance', 'lean', 'fast'
-        style = 'Veg' // 'Veg' or 'Non-Veg'
+        goal,
+        style = 'Veg'
     } = formData;
 
     const weight = parseFloat(currentWeight);
     const heightCm = parseFloat(height);
     const ageY = parseInt(age);
 
-    // 1. Calculate BMI
     const bmi = calculateBMI(weight, heightCm);
 
-    // 2. Calculate BMR
     let bmr = 0;
     if (gender === 'male') {
         bmr = (10 * weight) + (6.25 * heightCm) - (5 * ageY) + 5;
@@ -54,7 +206,6 @@ export function generateDietPlan(formData, dbFoods = []) {
         bmr = (10 * weight) + (6.25 * heightCm) - (5 * ageY) - 161;
     }
 
-    // 3. Calculate TDEE
     const multipliers = {
         sedentary: 1.2,
         light: 1.375,
@@ -65,7 +216,6 @@ export function generateDietPlan(formData, dbFoods = []) {
     const factor = multipliers[activityLevel] || 1.2;
     const tdee = bmr * factor;
 
-    // 4. Calculate Target Calories
     let targetCalories = tdee;
     if (goal === 'loss') {
         targetCalories = tdee - 500;
@@ -76,7 +226,6 @@ export function generateDietPlan(formData, dbFoods = []) {
     }
     targetCalories = Math.round(targetCalories);
 
-    // 5. Calculate Protein
     let protein = 0;
     if (goal === 'loss') {
         protein = weight * 2.2;
@@ -87,192 +236,423 @@ export function generateDietPlan(formData, dbFoods = []) {
     }
     protein = Math.round(protein);
 
-    // 6. Calculate Fat
     let fat = Math.round(weight * 0.8);
 
-    // 7. Calculate Carbs
     const proteinCalories = protein * 4;
     const fatCalories = fat * 9;
     const remainingCalories = targetCalories - proteinCalories - fatCalories;
     let carbs = Math.round(Math.max(0, remainingCalories) / 4);
 
-    // 8. Calculate Water Requirement (35ml per kg of body weight)
     const waterRequirement = parseFloat((weight * 0.035).toFixed(1));
     const fiberGrams = Math.round((targetCalories / 1000) * 14);
 
-    // 9. Filter Foods by Veg / Non-Veg
-    const catalog = dbFoods;
-    const filteredFoods = catalog.filter(f => {
+    const filteredFoods = dbFoods.filter(f => {
         if (style === 'Veg' && f.type === 'Non-Veg') {
             return false;
         }
         return true;
     });
 
-    // Helper to find specific foods by name
     const getFood = (nameQuery) => {
         return filteredFoods.find(f => f.food_name.toLowerCase().includes(nameQuery.toLowerCase())) || null;
     };
 
-    // 10. Macro and Portion Solver Loop (Accept within ±5%)
-    let breakfastItems = [];
-    let lunchItems = [];
-    let snackItems = [];
-    let dinnerItems = [];
+    // Budgets based on 35% / 30% / 15% / 20%
+    const budgets = {
+        breakfast: { cal: targetCalories * 0.35, p: protein * 0.35, c: carbs * 0.35, f: fat * 0.35 },
+        lunch: { cal: targetCalories * 0.30, p: protein * 0.30, c: carbs * 0.30, f: fat * 0.30 },
+        snack: { cal: targetCalories * 0.15, p: protein * 0.15, c: carbs * 0.15, f: fat * 0.15 },
+        dinner: { cal: targetCalories * 0.20, p: protein * 0.20, c: carbs * 0.20, f: fat * 0.20 }
+    };
 
-    // Select suitable food options depending on preference
+    const getServingsList = (min, max, inc) => {
+        const list = [];
+        for (let val = min; val <= max; val += inc) {
+            list.push(val);
+        }
+        if (list.length === 0 || list[list.length - 1] !== max) {
+            list.push(max);
+        }
+        return list;
+    };
+
+    const optimizeMeal = (mealTarget, proteinFood, carbFood, fatFood, sideFood, isDinner = false) => {
+        if (!proteinFood && !carbFood && !fatFood && !sideFood) return [];
+        let bestItems = [];
+        let minError = Infinity;
+
+        const pConstraints = proteinFood ? getServingConstraints(proteinFood, isDinner) : null;
+        const cConstraints = carbFood ? getServingConstraints(carbFood, isDinner) : null;
+        const fConstraints = fatFood ? getServingConstraints(fatFood, isDinner) : null;
+        const sConstraints = sideFood ? getServingConstraints(sideFood, isDinner) : null;
+
+        const pUnit = proteinFood ? getFoodUnit(proteinFood) : 'g';
+        const cUnit = carbFood ? getFoodUnit(carbFood) : 'g';
+        const fUnit = fatFood ? getFoodUnit(fatFood) : 'g';
+        const sUnit = sideFood ? getFoodUnit(sideFood) : 'g';
+
+        const pInc = pUnit === 'piece' ? 1 : 50;
+        const cInc = cUnit === 'piece' ? 1 : 50;
+        const fInc = fUnit === 'piece' ? 1 : 10;
+        const sInc = sUnit === 'piece' ? 1 : 50;
+
+        const pServings = proteinFood ? getServingsList(pConstraints.min, pConstraints.max, pInc) : [0];
+        const cServings = carbFood ? getServingsList(cConstraints.min, cConstraints.max, cInc) : [0];
+        const fServings = fatFood ? getServingsList(fConstraints.min, fConstraints.max, fInc) : [0];
+        const sServings = sideFood ? getServingsList(sConstraints.min, sConstraints.max, sInc) : [0];
+
+        if (fatFood) fServings.unshift(0);
+        if (sideFood) sServings.unshift(0);
+
+        for (const pQty of pServings) {
+            if (pQty === 0 && proteinFood) continue;
+            for (const cQty of cServings) {
+                if (cQty === 0 && carbFood) continue;
+                for (const fQty of fServings) {
+                    for (const sQty of sServings) {
+                        const items = [];
+                        let totalP = 0, totalC = 0, totalF = 0, totalCals = 0;
+
+                        if (proteinFood && pQty > 0) {
+                            const scale = pUnit === 'piece' ? pQty : pQty / 100;
+                            const item = getRealisticPortion(proteinFood, scale);
+                            items.push(item);
+                            totalP += item.protein; totalC += item.carbs; totalF += item.fat; totalCals += item.calories;
+                        }
+                        if (carbFood && cQty > 0) {
+                            const scale = cUnit === 'piece' ? cQty : cQty / 100;
+                            const item = getRealisticPortion(carbFood, scale);
+                            items.push(item);
+                            totalP += item.protein; totalC += item.carbs; totalF += item.fat; totalCals += item.calories;
+                        }
+                        if (fatFood && fQty > 0) {
+                            const scale = fUnit === 'piece' ? fQty : fQty / 100;
+                            const item = getRealisticPortion(fatFood, scale);
+                            items.push(item);
+                            totalP += item.protein; totalC += item.carbs; totalF += item.fat; totalCals += item.calories;
+                        }
+                        if (sideFood && sQty > 0) {
+                            const scale = sUnit === 'piece' ? sQty : sQty / 100;
+                            const item = getRealisticPortion(sideFood, scale);
+                            items.push(item);
+                            totalP += item.protein; totalC += item.carbs; totalF += item.fat; totalCals += item.calories;
+                        }
+
+                        const pErr = Math.abs(totalP - mealTarget.p);
+                        const cErr = Math.abs(totalC - mealTarget.c);
+                        const fErr = Math.abs(totalF - mealTarget.f);
+                        const calErr = Math.abs(totalCals - mealTarget.cal) / 10;
+
+                        const err = pErr * 2.0 + cErr + fErr + calErr;
+                        if (err < minError) {
+                            minError = err;
+                            bestItems = items;
+                        }
+                    }
+                }
+            }
+        }
+        return bestItems;
+    };
+
     const isNonVeg = style === 'Non-Veg';
-    
-    // Choose protein and carb sources
-    const proteinSource = isNonVeg ? getFood('Chicken Breast') || getFood('Fish') : getFood('Paneer') || getFood('Soy Chunks');
-    const breakfastEgg = isNonVeg ? getFood('Whole Egg') || getFood('Boiled Egg') || getFood('Egg White') : getFood('Greek Yogurt') || getFood('Curd');
-    
+
+    // 1. Breakfast (35%)
+    const bfProtein = isNonVeg ? (getFood('Egg White') || getFood('Whole Egg')) : (getFood('Greek Yogurt') || getFood('Curd'));
+    const bfCarb = getFood('Oats') || getFood('Idli') || getFood('Poha') || getFood('Dosa');
+    const bfFat = getFood('Milk');
+    const bfSide = getFood('Banana') || getFood('Apple');
+    let breakfastItems = optimizeMeal(budgets.breakfast, bfProtein, bfCarb, bfFat, bfSide);
+
+    // 2. Lunch (30%)
     const riceMealPref = (formData.riceMeal || 'lunch').toLowerCase();
-    const riceSource = getFood('White Rice') || getFood('Brown Rice');
-    const flatbreadSource = getFood('Chapati') || getFood('Wheat Roti');
+    const lunchProtein = isNonVeg ? (getFood('Chicken Breast') || getFood('Fish')) : (getFood('Paneer') || getFood('Soy Chunks') || getFood('Moong Dal'));
+    const lunchCarb = (riceMealPref === 'lunch') ? (getFood('White Rice') || getFood('Brown Rice')) : (getFood('Chapati') || getFood('Wheat Roti'));
+    const lunchFat = getFood('Curd') || getFood('Buttermilk');
+    const lunchSide = getFood('Mixed Vegetables') || getFood('Sprouts');
+    let lunchItems = optimizeMeal(budgets.lunch, lunchProtein, lunchCarb, lunchFat, lunchSide);
 
-    // Assign carb sources for each meal based on riceMeal preference:
-    let breakfastCarb = getFood('Idli') || getFood('Dosa') || flatbreadSource;
-    let lunchCarb = flatbreadSource;
-    let dinnerCarb = flatbreadSource;
+    // 3. Snack (15%)
+    const snackCarb = getFood('Banana') || getFood('Apple') || getFood('Orange');
+    const snackFat = getFood('Peanuts') || getFood('Almonds') || getFood('Peanut Butter');
+    let snackItems = optimizeMeal(budgets.snack, null, snackCarb, snackFat, null);
 
-    if (riceMealPref === 'breakfast') {
-        breakfastCarb = riceSource || getFood('Poha');
-    } else if (riceMealPref === 'lunch') {
-        lunchCarb = riceSource;
-    } else if (riceMealPref === 'dinner') {
-        dinnerCarb = riceSource;
-    }
+    // 4. Dinner (20%) - Lighter dinner constraints
+    let dinnerProtein = isNonVeg ? (getFood('Fish') || getFood('Whole Egg') || getFood('Egg White') || getFood('Chicken Breast')) : (getFood('Paneer') || getFood('Curd') || getFood('Moong Dal'));
+    const dinnerCarb = getFood('Chapati') || getFood('Wheat Roti');
+    const dinnerSide = getFood('Mixed Vegetables') || getFood('Sprouts');
+    let dinnerItems = optimizeMeal(budgets.dinner, dinnerProtein, dinnerCarb, null, dinnerSide, true);
 
-    const dalSource = getFood('Moong Dal') || getFood('Rajma') || getFood('Chickpeas');
-    const snackFruit = getFood('Banana') || getFood('Apple') || getFood('Orange');
-    const snackNut = getFood('Peanuts') || getFood('Almonds') || getFood('Walnuts') || getFood('Cashews');
-    const drinkSource = getFood('Milk') || getFood('Buttermilk');
-    const veggieSource = getFood('Mixed Vegetables') || getFood('Sprouts');
-
-    // Portion scale factors (initialize)
-    let pScale = 1.0;
-    let cScale = 1.0;
-    let fScale = 1.0;
-
-    let totalCals = 0;
-    let totalP = 0;
-    let totalC = 0;
-    let totalF = 0;
-
-    let bestPlan = null;
-    let minError = Infinity;
-
-    // Solver loop (max 150 iterations to allow step changes to settle)
-    for (let iter = 0; iter < 150; iter++) {
-        breakfastItems = [];
-        lunchItems = [];
-        snackItems = [];
-        dinnerItems = [];
-
-        // Breakfast (25% target)
-        if (breakfastEgg) {
-            const item = getRealisticPortion(breakfastEgg, 1.5 * pScale);
-            if (item) breakfastItems.push(item);
-        }
-        if (breakfastCarb) {
-            const item = getRealisticPortion(breakfastCarb, 2 * cScale);
-            if (item) breakfastItems.push(item);
-        }
-        if (drinkSource) {
-            const item = getRealisticPortion(drinkSource, 1.5 * fScale);
-            if (item) breakfastItems.push(item);
-        }
-
-        // Lunch (35% target)
-        if (proteinSource) {
-            const item = getRealisticPortion(proteinSource, 1.2 * pScale);
-            if (item) lunchItems.push(item);
-        }
-        if (lunchCarb) {
-            const item = getRealisticPortion(lunchCarb, 1.5 * cScale);
-            if (item) lunchItems.push(item);
-        }
-        if (dalSource) {
-            const item = getRealisticPortion(dalSource, 1.0 * pScale);
-            if (item) lunchItems.push(item);
-        }
-        if (veggieSource) {
-            const item = getRealisticPortion(veggieSource, 1.0);
-            if (item) lunchItems.push(item);
-        }
-
-        // Snack (15% target)
-        if (snackFruit) {
-            const item = getRealisticPortion(snackFruit, 1.5 * cScale);
-            if (item) snackItems.push(item);
-        }
-        if (snackNut) {
-            const item = getRealisticPortion(snackNut, 0.6 * fScale);
-            if (item) snackItems.push(item);
-        }
-
-        // Dinner (25% target)
-        if (dinnerCarb) {
-            const item = getRealisticPortion(dinnerCarb, 2.5 * cScale);
-            if (item) dinnerItems.push(item);
-        }
-        if (dalSource) {
-            const item = getRealisticPortion(dalSource, 0.8 * pScale);
-            if (item) dinnerItems.push(item);
-        }
-        if (veggieSource) {
-            const item = getRealisticPortion(veggieSource, 1.0);
-            if (item) dinnerItems.push(item);
-        }
-
-        // Calculate totals
-        totalCals = 0; totalP = 0; totalC = 0; totalF = 0;
-        const allItems = [...breakfastItems, ...lunchItems, ...snackItems, ...dinnerItems];
-        allItems.forEach(item => {
-            totalCals += item.calories;
+    let totalP = 0, totalC = 0, totalF = 0, totalCals = 0;
+    const calculateTotals = () => {
+        totalP = 0; totalC = 0; totalF = 0; totalCals = 0;
+        const all = [...breakfastItems, ...lunchItems, ...snackItems, ...dinnerItems];
+        all.forEach(item => {
             totalP += item.protein;
             totalC += item.carbs;
             totalF += item.fat;
+            totalCals += item.calories;
         });
+    };
+    calculateTotals();
 
-        // Check validation (within ±5%)
-        const calDiff = Math.abs(totalCals - targetCalories) / targetCalories;
-        const pDiff = Math.abs(totalP - protein) / protein;
-        const cDiff = Math.abs(totalC - carbs) / carbs;
-        const fDiff = Math.abs(totalF - fat) / fat;
+    // 5. Deficit Filler Loop (Maximum 30 iterations)
+    for (let fillIter = 0; fillIter < 30; fillIter++) {
+        calculateTotals();
+        const pDeficit = protein - totalP;
+        const cDeficit = carbs - totalC;
+        const fDeficit = fat - totalF;
 
-        const currentError = calDiff + pDiff + cDiff + fDiff;
-        if (currentError < minError) {
-            minError = currentError;
-            bestPlan = {
-                totalCals,
-                totalP,
-                totalC,
-                totalF,
-                meals: [
-                    { name: '🌅 Breakfast (25%)', items: JSON.parse(JSON.stringify(breakfastItems)) },
-                    { name: '🍛 Lunch (35%)', items: JSON.parse(JSON.stringify(lunchItems)) },
-                    { name: '🥜 Snack (15%)', items: JSON.parse(JSON.stringify(snackItems)) },
-                    { name: '🌙 Dinner (25%)', items: JSON.parse(JSON.stringify(dinnerItems)) }
-                ]
-            };
+        if (pDeficit <= 5 && cDeficit <= 8 && fDeficit <= 3) {
+            break;
         }
 
-        if (calDiff <= 0.05 && pDiff <= 0.05 && cDiff <= 0.05 && fDiff <= 0.05) {
-            break; // Success!
+        // Protein deficit (eggs -> chicken/paneer -> dairy)
+        if (pDeficit > 5) {
+            let handled = false;
+            if (isNonVeg) {
+                let eggItemIdx = breakfastItems.findIndex(item => item.name.toLowerCase().includes('egg'));
+                if (eggItemIdx !== -1) {
+                    const match = breakfastItems[eggItemIdx].name.match(/^(\d+)/);
+                    if (match) {
+                        const qty = parseInt(match[1], 10);
+                        const constraints = getServingConstraints(getFood('Whole Egg'));
+                        if (qty < constraints.max) {
+                            breakfastItems[eggItemIdx] = getRealisticPortion(getFood('Whole Egg'), qty + 1);
+                            handled = true;
+                        }
+                    }
+                } else {
+                    breakfastItems.push(getRealisticPortion(getFood('Whole Egg'), 1));
+                    handled = true;
+                }
+            }
+
+            if (!handled) {
+                let targetFood = isNonVeg ? getFood('Chicken Breast') : getFood('Paneer');
+                if (targetFood) {
+                    let itemIdx = lunchItems.findIndex(item => item.name.toLowerCase().includes(targetFood.food_name.toLowerCase()));
+                    if (itemIdx !== -1) {
+                        const match = lunchItems[itemIdx].name.match(/^(\d+)/);
+                        if (match) {
+                            const grams = parseInt(match[1], 10);
+                            const constraints = getServingConstraints(targetFood);
+                            if (grams + 50 <= constraints.max) {
+                                lunchItems[itemIdx] = getRealisticPortion(targetFood, (grams + 50) / 100);
+                                handled = true;
+                            }
+                        }
+                    } else {
+                        lunchItems.push(getRealisticPortion(targetFood, 1.0));
+                        handled = true;
+                    }
+                }
+            }
+
+            if (!handled) {
+                let targetFood = getFood('Greek Yogurt') || getFood('Curd') || getFood('Milk');
+                if (targetFood) {
+                    let itemIdx = breakfastItems.findIndex(item => item.name.toLowerCase().includes(targetFood.food_name.toLowerCase()));
+                    if (itemIdx !== -1) {
+                        const match = breakfastItems[itemIdx].name.match(/^(\d+)/);
+                        if (match) {
+                            const qty = parseInt(match[1], 10);
+                            const constraints = getServingConstraints(targetFood);
+                            const step = targetFood.food_name.toLowerCase().includes('milk') ? 100 : 50;
+                            if (qty + step <= constraints.max) {
+                                breakfastItems[itemIdx] = getRealisticPortion(targetFood, (qty + step) / 100);
+                                handled = true;
+                            }
+                        }
+                    } else {
+                        breakfastItems.push(getRealisticPortion(targetFood, 1.5));
+                        handled = true;
+                    }
+                }
+            }
+
+            if (!handled) break;
+            continue;
         }
 
-        // Adjust scales based on differences
-        if (totalP < protein) pScale += 0.05; else pScale -= 0.05;
-        if (totalC < carbs) cScale += 0.05; else cScale -= 0.05;
-        if (totalF < fat) fScale += 0.05; else fScale -= 0.05;
+        // Carb deficit (rice -> chapati -> oats -> banana)
+        if (cDeficit > 8) {
+            let handled = false;
+            const targetRice = getFood('White Rice') || getFood('Brown Rice');
+            if (targetRice) {
+                let itemIdx = lunchItems.findIndex(item => item.name.toLowerCase().includes(targetRice.food_name.toLowerCase()));
+                if (itemIdx !== -1) {
+                    const match = lunchItems[itemIdx].name.match(/^(\d+)/);
+                    if (match) {
+                        const grams = parseInt(match[1], 10);
+                        const constraints = getServingConstraints(targetRice);
+                        if (grams + 50 <= constraints.max) {
+                            lunchItems[itemIdx] = getRealisticPortion(targetRice, (grams + 50) / 100);
+                            handled = true;
+                        }
+                    }
+                }
+            }
 
-        // Clip scales to prevent negatives
-        pScale = Math.max(0.1, pScale);
-        cScale = Math.max(0.1, cScale);
-        fScale = Math.max(0.1, fScale);
+            if (!handled) {
+                const targetChapati = getFood('Chapati') || getFood('Wheat Roti');
+                if (targetChapati) {
+                    let itemIdx = lunchItems.findIndex(item => item.name.toLowerCase().includes(targetChapati.food_name.toLowerCase()));
+                    if (itemIdx !== -1) {
+                        const match = lunchItems[itemIdx].name.match(/^(\d+)/);
+                        if (match) {
+                            const qty = parseInt(match[1], 10);
+                            const constraints = getServingConstraints(targetChapati);
+                            if (qty < constraints.max) {
+                                lunchItems[itemIdx] = getRealisticPortion(targetChapati, qty + 1);
+                                handled = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!handled) {
+                const targetOats = getFood('Oats');
+                if (targetOats) {
+                    let itemIdx = breakfastItems.findIndex(item => item.name.toLowerCase().includes(targetOats.food_name.toLowerCase()));
+                    if (itemIdx !== -1) {
+                        const match = breakfastItems[itemIdx].name.match(/^(\d+)/);
+                        if (match) {
+                            const grams = parseInt(match[1], 10);
+                            const constraints = getServingConstraints(targetOats);
+                            if (grams + 25 <= constraints.max) {
+                                breakfastItems[itemIdx] = getRealisticPortion(targetOats, (grams + 25) / 100);
+                                handled = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!handled) {
+                const targetBanana = getFood('Banana');
+                if (targetBanana) {
+                    let itemIdx = snackItems.findIndex(item => item.name.toLowerCase().includes(targetBanana.food_name.toLowerCase()));
+                    if (itemIdx !== -1) {
+                        const match = snackItems[itemIdx].name.match(/^(\d+)/);
+                        if (match) {
+                            const qty = parseInt(match[1], 10);
+                            const constraints = getServingConstraints(targetBanana);
+                            if (qty < constraints.max) {
+                                snackItems[itemIdx] = getRealisticPortion(targetBanana, qty + 1);
+                                handled = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!handled) break;
+            continue;
+        }
+
+        // Fat deficit (nuts -> seeds -> peanut butter)
+        if (fDeficit > 3) {
+            let handled = false;
+            const targetNuts = getFood('Peanuts') || getFood('Almonds') || getFood('Walnuts') || getFood('Cashews');
+            if (targetNuts) {
+                let itemIdx = snackItems.findIndex(item => item.name.toLowerCase().includes(targetNuts.food_name.toLowerCase()));
+                if (itemIdx !== -1) {
+                    const match = snackItems[itemIdx].name.match(/^(\d+)/);
+                    if (match) {
+                        const grams = parseInt(match[1], 10);
+                        const constraints = getServingConstraints(targetNuts);
+                        if (grams + 10 <= constraints.max) {
+                            snackItems[itemIdx] = getRealisticPortion(targetNuts, (grams + 10) / 100);
+                            handled = true;
+                        }
+                    }
+                }
+            }
+
+            if (!handled) {
+                const targetPB = getFood('Peanut Butter');
+                if (targetPB) {
+                    let itemIdx = snackItems.findIndex(item => item.name.toLowerCase().includes(targetPB.food_name.toLowerCase()));
+                    if (itemIdx !== -1) {
+                        const match = snackItems[itemIdx].name.match(/^(\d+)/);
+                        if (match) {
+                            const grams = parseInt(match[1], 10);
+                            const constraints = getServingConstraints(targetPB);
+                            if (grams + 10 <= constraints.max) {
+                                snackItems[itemIdx] = getRealisticPortion(targetPB, (grams + 10) / 100);
+                                handled = true;
+                            }
+                        }
+                    }
+                }
+            }
+
+            if (!handled) break;
+            continue;
+        }
     }
+
+    // 6. Supplement Support (Whey Protein scoop after food plan is completed)
+    calculateTotals();
+    const finalPDeficit = protein - totalP;
+    if (finalPDeficit >= 15) {
+        const wheyFood = getFood('Whey') || getFood('Whey Protein');
+        if (wheyFood) {
+            const wheyItem = getRealisticPortion(wheyFood, 0.33); // 33g
+            if (wheyItem) {
+                wheyItem.name = "1 Scoop Whey Protein";
+                snackItems.push(wheyItem);
+            }
+        } else {
+            snackItems.push({
+                name: "1 Scoop Whey Protein",
+                calories: 120,
+                protein: 25,
+                carbs: 2,
+                fat: 1.5,
+                fiber: 0,
+                is_optional: true,
+                alternative_name: null
+            });
+        }
+    }
+
+    calculateTotals();
+
+    // 7. Dinner Safety Clamper (Ensure dinner calories never exceed 25% of daily total)
+    let dinnerCals = dinnerItems.reduce((sum, item) => sum + item.calories, 0);
+    if (dinnerCals > totalCals * 0.25) {
+        const scaleDown = (totalCals * 0.22) / dinnerCals;
+        dinnerItems = dinnerItems.map(item => {
+            const match = item.name.match(/^(\d+)/);
+            const currentQty = match ? parseInt(match[1], 10) : 100;
+            const unit = getFoodUnit(getFood(item.name.replace(/^\d+(g|ml)?\s+/, '')));
+            let newQty = currentQty * scaleDown;
+            if (unit === 'piece') {
+                newQty = Math.max(1, Math.round(newQty));
+            } else {
+                newQty = Math.max(25, Math.round(newQty / 25) * 25);
+            }
+            const dbFood = getFood(item.name.replace(/^\d+(g|ml)?\s+/, ''));
+            return dbFood ? getRealisticPortion(dbFood, unit === 'piece' ? newQty : newQty / 100) : item;
+        });
+        calculateTotals();
+    }
+
+    const bestPlan = {
+        totalCals,
+        totalP,
+        totalC,
+        totalF,
+        meals: [
+            { name: '🌅 Breakfast (35%)', items: breakfastItems },
+            { name: '🍛 Lunch (30%)', items: lunchItems },
+            { name: '🥜 Snack (15%)', items: snackItems },
+            { name: '🌙 Dinner (20%)', items: dinnerItems }
+        ]
+    };
 
     return {
         bmi,
@@ -286,106 +666,6 @@ export function generateDietPlan(formData, dbFoods = []) {
             fiber: fiberGrams
         },
         meals: bestPlan.meals
-    };
-}
-
-export function getRealisticPortion(food, targetScale) {
-    if (!food) return null;
-    const name = food.food_name.toLowerCase();
-    let qty = 1;
-    let scale = 1.0;
-    let nameWithQty = '';
-
-    // Check specific food types:
-    if (name.includes('egg white')) {
-        // 1 egg white = approx 33g, so scale of 0.33 per egg white (100g base in DB)
-        const rawQty = (targetScale * 100) / 33;
-        qty = Math.max(1, Math.round(rawQty));
-        scale = (qty * 33) / 100;
-        nameWithQty = `${qty} Egg White${qty > 1 ? 's' : ''}`;
-    } else if (name.includes('egg')) {
-        // Whole Egg or Boiled Egg: 1 egg = 50g, scale of 0.5 per egg (100g base in DB)
-        const rawQty = (targetScale * 100) / 50;
-        qty = Math.max(1, Math.round(rawQty));
-        scale = (qty * 50) / 100;
-        nameWithQty = `${qty} ${food.food_name}${qty > 1 ? 's' : ''}`;
-    } else if (name.includes('banana')) {
-        // 1 banana = 100g base (scale = 1.0)
-        qty = Math.max(1, Math.round(targetScale));
-        scale = qty;
-        nameWithQty = `${qty} Banana${qty > 1 ? 's' : ''}`;
-    } else if (name.includes('apple')) {
-        // 1 apple = 100g base (scale = 1.0)
-        qty = Math.max(1, Math.round(targetScale));
-        scale = qty;
-        nameWithQty = `${qty} Apple${qty > 1 ? 's' : ''}`;
-    } else if (name.includes('chapati') || name.includes('roti')) {
-        // DB unit is 1 piece (scale = 1.0)
-        qty = Math.max(1, Math.round(targetScale));
-        scale = qty;
-        nameWithQty = `${qty} Chapati${qty > 1 ? 's' : ''}`;
-    } else if (name.includes('idli')) {
-        // DB unit is 1 piece
-        qty = Math.max(1, Math.round(targetScale));
-        scale = qty;
-        nameWithQty = `${qty} Idli${qty > 1 ? 's' : ''}`;
-    } else if (name.includes('dosa')) {
-        // DB unit is 1 piece
-        qty = Math.max(1, Math.round(targetScale));
-        scale = qty;
-        nameWithQty = `${qty} Dosa${qty > 1 ? 's' : ''}`;
-    } else if (name.includes('appam')) {
-        // DB unit is 1 piece
-        qty = Math.max(1, Math.round(targetScale));
-        scale = qty;
-        nameWithQty = `${qty} Appam${qty > 1 ? 's' : ''}`;
-    } else if (name.includes('chicken') || name.includes('fish') || name.includes('tuna') || name.includes('prawns') || name.includes('paneer') || name.includes('tofu') || name.includes('rice')) {
-        // 50g increments. targetScale is multiplier for 100g base.
-        const rawGrams = targetScale * 100;
-        const roundedGrams = Math.max(50, Math.round(rawGrams / 50) * 50);
-        scale = roundedGrams / 100;
-        nameWithQty = `${roundedGrams}g ${food.food_name}`;
-    } else if (name.includes('oats')) {
-        // 10g or 25g increments. Let's do 10g increments.
-        const rawGrams = targetScale * 100;
-        const roundedGrams = Math.max(10, Math.round(rawGrams / 10) * 10);
-        scale = roundedGrams / 100;
-        nameWithQty = `${roundedGrams}g ${food.food_name}`;
-    } else if (name.includes('milk') || name.includes('buttermilk')) {
-        // 100ml increments. targetScale is multiplier for 100ml base.
-        const rawMl = targetScale * 100;
-        const roundedMl = Math.max(100, Math.round(rawMl / 100) * 100);
-        scale = roundedMl / 100;
-        nameWithQty = `${roundedMl}ml ${food.food_name}`;
-    } else {
-        // Fallback for other foods based on category
-        if (food.category === 'Drink') {
-            const rawMl = targetScale * 100;
-            const roundedMl = Math.max(100, Math.round(rawMl / 100) * 100);
-            scale = roundedMl / 100;
-            nameWithQty = `${roundedMl}ml ${food.food_name}`;
-        } else if (food.category === 'Fruit' || food.category === 'Snack' || food.category === 'Food') {
-            // Veggies, seeds, nuts, dal, poha, potato etc. round to nearest 10g
-            const rawGrams = targetScale * 100;
-            const roundedGrams = Math.max(10, Math.round(rawGrams / 10) * 10);
-            scale = roundedGrams / 100;
-            nameWithQty = `${roundedGrams}g ${food.food_name}`;
-        } else {
-            const roundedScale = Math.max(0.5, Math.round(targetScale * 2) / 2);
-            scale = roundedScale;
-            nameWithQty = `${scale} serving${scale !== 1 ? 's' : ''} of ${food.food_name}`;
-        }
-    }
-
-    return {
-        name: nameWithQty,
-        calories: Math.round(Number(food.calories_kcal) * scale),
-        protein: Math.round(Number(food.protein_g) * scale),
-        carbs: Math.round(Number(food.carbs_g) * scale),
-        fat: Math.round(Number(food.fat_g) * scale),
-        fiber: Math.round(Number(food.fiber_g || 0) * scale),
-        is_optional: !!food.is_optional,
-        alternative_name: food.alternative_name || null
     };
 }
 
